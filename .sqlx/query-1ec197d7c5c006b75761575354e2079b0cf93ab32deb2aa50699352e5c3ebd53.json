@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO docker_image_scans (id, docker_manifest_id, scanned_at, vulnerabilities) VALUES ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1ec197d7c5c006b75761575354e2079b0cf93ab32deb2aa50699352e5c3ebd53"
+}

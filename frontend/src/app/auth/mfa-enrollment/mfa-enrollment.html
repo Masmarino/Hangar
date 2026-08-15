@@ -1,0 +1,88 @@
+<p>La double authentification est obligatoire sur ce compte.</p>
+@switch (setupStep()) {
+  @case ('choice') {
+    <p>Choisissez une méthode pour continuer :</p>
+    @if (errorMessage(); as message) {
+      <p class="gbt-form-error" role="alert">{{ message }}</p>
+    }
+    <div class="auth-layout__actions">
+      <gbt-button
+        text="Application d'authentification (TOTP)"
+        [loading]="submitting()"
+        loadingLabel="Chargement en cours"
+        [disabled]="submitting()"
+        (clicked)="chooseTotpSetup()"
+      />
+      @if (passkeysSupported) {
+        <gbt-button
+          text="Clé d'accès (passkey)"
+          variant="secondary"
+          [disabled]="submitting()"
+          (clicked)="choosePasskeySetup()"
+        />
+      }
+    </div>
+  }
+  @case ('totp-enroll') {
+    <p>
+      Scannez ce QR code avec votre application d'authentification, ou saisissez le code
+      manuellement :
+    </p>
+    @if (qrCodeDataUrl(); as dataUrl) {
+      <img [src]="dataUrl" alt="QR code d'activation" class="auth-layout__qr" />
+    }
+    <p class="auth-layout__secret">{{ totpSecret() }}</p>
+    <gbt-input
+      label="Code de vérification"
+      [ngModel]="setupCode()"
+      [ngModelOptions]="{ standalone: true }"
+      (ngModelChange)="setupCode.set($event)"
+    />
+    @if (errorMessage(); as message) {
+      <p class="gbt-form-error" role="alert">{{ message }}</p>
+    }
+    <div class="auth-layout__actions">
+      <gbt-button
+        text="Confirmer"
+        [loading]="submitting()"
+        loadingLabel="Chargement en cours"
+        [disabled]="setupCode().trim() === ''"
+        (clicked)="confirmTotpSetup()"
+      />
+      <gbt-button text="Retour" variant="secondary" (clicked)="backToChoice()" />
+    </div>
+  }
+  @case ('backup-codes') {
+    <p>
+      Double authentification activée. Conservez ces codes de secours dans un endroit sûr —
+      chacun ne peut être utilisé qu'une seule fois.
+    </p>
+    <ul class="auth-layout__codes">
+      @for (code of backupCodes(); track code) {
+        <li>{{ code }}</li>
+      }
+    </ul>
+    <gbt-button text="J'ai sauvegardé ces codes" (clicked)="finishSetup()" />
+  }
+  @case ('passkey') {
+    <gbt-input
+      label="Nom de la clé (ex. « MacBook Touch ID »)"
+      [ngModel]="passkeyName()"
+      [ngModelOptions]="{ standalone: true }"
+      (ngModelChange)="passkeyName.set($event)"
+    />
+    @if (errorMessage(); as message) {
+      <p class="gbt-form-error" role="alert">{{ message }}</p>
+    }
+    <div class="auth-layout__actions">
+      <gbt-button
+        text="Enregistrer la clé d'accès"
+        [loading]="submitting()"
+        loadingLabel="Chargement en cours"
+        [disabled]="passkeyName().trim() === ''"
+        (clicked)="registerSetupPasskey()"
+      />
+      <gbt-button text="Retour" variant="secondary" (clicked)="backToChoice()" />
+    </div>
+  }
+}

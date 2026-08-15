@@ -1,0 +1,233 @@
+.container gbt-card {
+  margin-bottom: 1.5rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.package-detail-page__back {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+  }
+}
+
+.package-detail__audit-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+
+  .package-detail__eyebrow {
+    margin-bottom: 0;
+  }
+}
+
+.package-detail__eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.package-detail__dist-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.package-detail__dist-tag {
+  padding: 0.1875rem 0.5625rem;
+  background: var(--bg-hover);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  color: var(--text-secondary);
+}
+
+.package-detail__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  th {
+    text-align: left;
+    padding: 0.625rem 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  td {
+    padding: 0.625rem 0.75rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  tbody tr {
+    transition: background-color var(--site-transition-fast);
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &:last-child td {
+      border-bottom: none;
+    }
+  }
+}
+
+.package-detail__actions {
+  text-align: right;
+}
+
+.package-detail__version {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.package-detail__digest {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.package-detail__badge {
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.375rem;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-bg-text);
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.package-detail__danger {
+  border: 1px solid var(--color-error-base);
+  border-radius: var(--site-border-radius-lg);
+}
+
+.package-detail__audit-status {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+
+  &--clean {
+    color: var(--color-success-base);
+  }
+}
+
+.package-detail__audit-meta {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-discret);
+}
+
+.package-detail__severity-filter {
+  display: block;
+  max-width: 260px;
+  margin-bottom: 0.75rem;
+}
+
+.package-detail__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.package-detail__pagination-status {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.package-detail__advisories {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.package-detail__advisory {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.package-detail__advisory-body {
+  min-width: 0;
+
+  a {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.875rem;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.package-detail__advisory-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+
+  code {
+    padding: 0.0625rem 0.375rem;
+    background: var(--bg-hover);
+    border-radius: var(--site-border-radius-sm);
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 0.75rem;
+  }
+}
+
+.package-detail__severity {
+  flex-shrink: 0;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  &--high {
+    background: var(--color-error-bg);
+    color: var(--color-error-bg-text);
+  }
+
+  &--moderate {
+    background: var(--color-warning-bg);
+    color: var(--color-warning-bg-text);
+  }
+
+  &--low {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+  }
+}
+
+.package-detail__danger-text {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+
+  strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+}

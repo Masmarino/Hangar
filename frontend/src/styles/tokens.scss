@@ -1,0 +1,11 @@
+// Tokens (palette, semantic, utility) come from Gabarit.
+@use '@masmarino/gabarit/tokens' as *;
+
+// Stays here, specific to Hangar: the font declaration — the library ships no @font-face since the asset path belongs to the application.
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter/Inter-Regular.woff2') format('woff2-variations');
+}

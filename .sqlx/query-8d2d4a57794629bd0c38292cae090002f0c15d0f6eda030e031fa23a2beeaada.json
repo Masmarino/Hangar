@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO metrics_snapshots (id, recorded_at, total_users, total_repositories, total_storage_bytes) VALUES ($1, $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Int8",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8d2d4a57794629bd0c38292cae090002f0c15d0f6eda030e031fa23a2beeaada"
+}

@@ -1,0 +1,74 @@
+<div class="stack">
+  @if (loading()) {
+    <p>Chargement…</p>
+  } @else if (members().length === 0) {
+    <p>Aucun membre</p>
+  } @else {
+    <table class="organization-members__table">
+      <caption>Membres de l'organisation</caption>
+      <thead>
+        <tr>
+          <th scope="col">Nom d'utilisateur</th>
+          <th scope="col">E-mail</th>
+          <th scope="col">Administrateur</th>
+          <th scope="col">Invitation en attente</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (member of members(); track member.id) {
+          <tr>
+            <td>{{ member.username }}</td>
+            <td>{{ member.email }}</td>
+            <td>{{ member.is_organization_admin ? 'Oui' : 'Non' }}</td>
+            <td>{{ member.invitation_pending ? 'Oui' : 'Non' }}</td>
+            <td class="organization-members__actions">
+              <gbt-button
+                [text]="member.is_organization_admin ? 'Rétrograder' : 'Promouvoir'"
+                variant="secondary"
+                size="small"
+                (clicked)="toggleOrganizationAdmin(member)"
+              />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  @if (errorMessage(); as message) {
+    <p class="gbt-form-error" role="alert">{{ message }}</p>
+  }
+
+  @if (addingMember()) {
+    <div class="stack">
+      <gbt-input
+        label="Nom d'utilisateur"
+        [ngModel]="newUsername()"
+        (ngModelChange)="newUsername.set($event)"
+      />
+      <gbt-input
+        label="Adresse e-mail"
+        [ngModel]="newEmail()"
+        (ngModelChange)="newEmail.set($event)"
+      />
+      <gbt-checkbox
+        label="Administrateur de cette organisation"
+        [ngModel]="newIsOrganizationAdmin()"
+        (ngModelChange)="newIsOrganizationAdmin.set($event)"
+      />
+      <div class="d-flex gap-2">
+        <gbt-button
+          text="Inviter"
+          [loading]="inviting()"
+          loadingLabel="Chargement en cours"
+          [disabled]="newUsername().trim() === '' || newEmail().trim() === ''"
+          (clicked)="invite()"
+        />
+        <gbt-button text="Annuler" variant="secondary" (clicked)="cancelAdding()" />
+      </div>
+    </div>
+  } @else {
+    <gbt-button text="Inviter un membre" (clicked)="startAdding()" />
+  }
+</div>

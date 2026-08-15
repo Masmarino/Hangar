@@ -1,0 +1,57 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT aggregate_type, aggregate_id, event_type, payload, occurred_at, actor_id\n            FROM domain_events\n            WHERE ($1::text IS NULL OR aggregate_type = $1)\n              AND ($2::text IS NULL OR aggregate_id = $2)\n              AND ($3::uuid IS NULL OR actor_id = $3)\n              AND ($4::timestamptz IS NULL OR occurred_at >= $4)\n              AND ($5::timestamptz IS NULL OR occurred_at <= $5)\n              AND ($6::text IS NULL OR aggregate_type != $6)\n            ORDER BY occurred_at DESC\n            LIMIT 200\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "aggregate_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "aggregate_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "event_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "payload",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 4,
+        "name": "occurred_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "actor_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Uuid",
+        "Timestamptz",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "2f3c8dbc975947d6961dbcc7863ab19f8c85428d6d3150afea1f703518f9c55f"
+}

@@ -1,0 +1,20 @@
+<gbt-button text="Nouveau dépôt" (clicked)="showCreateModal.set(true)" />
+@if (loading()) {
+  <p>Chargement…</p>
+} @else if (error(); as message) {
+  <p class="gbt-form-error" role="alert">{{ message }}</p>
+  <gbt-button text="Réessayer" (clicked)="reload()" />
+} @else {
+  <gbt-table
+    caption="Dépôts"
+    emptyMessage="Aucune donnée disponible"
+    [clickableRows]="true"
+    [data]="repositories()"
+    [columns]="columns"
+    [trackBy]="rowId"
+    (rowClick)="openDetail($event)"
+  />
+}
+@if (showCreateModal()) {
+  <app-create-repository-modal (created)="onCreated()" (cancelled)="showCreateModal.set(false)" />
+}

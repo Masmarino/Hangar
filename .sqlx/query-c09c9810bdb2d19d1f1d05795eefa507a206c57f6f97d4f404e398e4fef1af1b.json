@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS( SELECT 1 FROM docker_manifest_blobs dmb JOIN docker_manifests dm ON dm.id = dmb.manifest_id WHERE dm.package_repository_id = $1 AND dmb.blob_digest = $2 ) AS \"exists!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "c09c9810bdb2d19d1f1d05795eefa507a206c57f6f97d4f404e398e4fef1af1b"
+}

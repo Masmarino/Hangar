@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO docker_manifest_blobs (manifest_id, blob_digest) VALUES ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5808f804194c12388b3be2c8ab7863dbd032b7fb33101fa5c202a7cb17efafef"
+}

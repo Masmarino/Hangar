@@ -1,0 +1,31 @@
+@if (isSuperAdmin()) {
+  <div class="toolbar">
+    <gbt-button text="Nouvel utilisateur" (clicked)="showCreateModal.set(true)" />
+    <gbt-select
+      label="Organisation"
+      placeholder="Sélectionner…"
+      [options]="organizationOptions()"
+      [ngModel]="selectedOrganizationId()"
+      (ngModelChange)="selectedOrganizationId.set($event)"
+    />
+  </div>
+}
+@if (loading()) {
+  <p>Chargement…</p>
+} @else if (error(); as message) {
+  <p class="gbt-form-error" role="alert">{{ message }}</p>
+  <gbt-button text="Réessayer" (clicked)="reload()" />
+} @else {
+  <gbt-table
+    caption="Utilisateurs"
+    emptyMessage="Aucune donnée disponible"
+    [clickableRows]="true"
+    [data]="filteredUsers()"
+    [columns]="columns()"
+    [trackBy]="rowId"
+    (rowClick)="openDetail($event)"
+  />
+}
+@if (showCreateModal()) {
+  <app-create-user-modal (created)="onUserCreated()" (cancelled)="showCreateModal.set(false)" />
+}

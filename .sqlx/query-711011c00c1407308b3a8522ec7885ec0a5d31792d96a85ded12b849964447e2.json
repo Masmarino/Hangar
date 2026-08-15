@@ -1,0 +1,77 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, organization_id, name, format, repo_type, remote_url, remote_username, remote_password, quota_bytes, retention_keep_last_n FROM package_repository_projections WHERE organization_id = $1 AND name = $2 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "organization_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "format",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "repo_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "remote_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "remote_username",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "remote_password",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "quota_bytes",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "retention_keep_last_n",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "711011c00c1407308b3a8522ec7885ec0a5d31792d96a85ded12b849964447e2"
+}

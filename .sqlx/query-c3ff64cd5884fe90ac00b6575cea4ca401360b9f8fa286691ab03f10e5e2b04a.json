@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, npm_package_version_id, scanned_at, packages_scanned, truncated, findings FROM npm_dependency_audits WHERE npm_package_version_id = $1 ORDER BY scanned_at DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "npm_package_version_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "scanned_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "packages_scanned",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "truncated",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "findings",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c3ff64cd5884fe90ac00b6575cea4ca401360b9f8fa286691ab03f10e5e2b04a"
+}

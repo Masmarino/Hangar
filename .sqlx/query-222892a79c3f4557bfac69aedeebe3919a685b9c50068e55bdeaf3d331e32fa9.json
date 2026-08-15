@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO permission_projections (user_id, repository_id, role, version, updated_at) VALUES ($1, $2, $3, $4, now()) ON CONFLICT (user_id, repository_id) DO UPDATE SET role = EXCLUDED.role, version = EXCLUDED.version, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "222892a79c3f4557bfac69aedeebe3919a685b9c50068e55bdeaf3d331e32fa9"
+}

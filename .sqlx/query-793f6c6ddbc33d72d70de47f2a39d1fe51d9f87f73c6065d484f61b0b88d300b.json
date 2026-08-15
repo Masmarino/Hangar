@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE package_repository_projections SET quota_bytes = $1 WHERE id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "793f6c6ddbc33d72d70de47f2a39d1fe51d9f87f73c6065d484f61b0b88d300b"
+}

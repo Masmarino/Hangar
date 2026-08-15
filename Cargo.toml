@@ -1,0 +1,29 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/hangar-domain",
+    "crates/hangar-application",
+    "crates/hangar-infrastructure",
+    "crates/hangar-api",
+    "crates/hangar-npm",
+    "crates/hangar-docker",
+]
+
+[workspace.package]
+edition = "2024"
+
+# Line tables are enough for RUST_BACKTRACE=1 to show file:line — full debug
+# info (Cargo's default) also carries per-variable type/location data that
+# only an interactive debugger needs, and is the single biggest contributor
+# to target/'s size across this many crates and heavy deps (openssl vendored
+# in particular). Applies to dev and test both — test inherits unset fields
+# from dev.
+[profile.dev]
+debug = "line-tables-only"
+
+# "thin" LTO + one codegen unit for a faster, smaller production binary — full
+# ("fat") LTO would go further but noticeably lengthens the Docker build.
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

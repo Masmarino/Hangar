@@ -1,0 +1,74 @@
+<div class="form-container">
+  <gbt-card heading="Logo" icon="image">
+    <p>
+      Affiché sur les pages de connexion, d'activation et dans l'en-tête de l'application, ainsi
+      que dans les e-mails envoyés par cette instance. PNG ou JPEG, 2 Mo maximum.
+    </p>
+    <img
+      [src]="logoPreviewUrl()"
+      alt="Logo actuel"
+      class="branding-settings__logo-preview"
+      width="260"
+      height="80"
+    />
+    <input
+      type="file"
+      accept="image/png,image/jpeg"
+      aria-label="Choisir un fichier logo (PNG ou JPEG)"
+      (change)="onLogoFileSelected($event)"
+    />
+    <div class="branding-settings__actions">
+      <gbt-button
+        text="Importer"
+        [loading]="uploadingLogo()"
+        loadingLabel="Chargement en cours"
+        [disabled]="!selectedLogoFile()"
+        (clicked)="uploadLogo()"
+      />
+      <gbt-button
+        text="Réinitialiser"
+        variant="secondary"
+        [disabled]="uploadingLogo()"
+        (clicked)="resetLogo()"
+      />
+    </div>
+    @if (logoError(); as message) {
+      <p class="gbt-form-error" role="alert">{{ message }}</p>
+    }
+  </gbt-card>
+
+  <gbt-card heading="Favicon" icon="image">
+    <p>Icône affichée dans l'onglet du navigateur. PNG, JPEG ou ICO, 2 Mo maximum.</p>
+    <img
+      [src]="faviconPreviewUrl()"
+      alt="Favicon actuel"
+      class="branding-settings__favicon-preview"
+      width="32"
+      height="32"
+    />
+    <input
+      type="file"
+      accept="image/png,image/jpeg,image/x-icon,.ico"
+      aria-label="Choisir un fichier favicon (PNG, JPEG ou ICO)"
+      (change)="onFaviconFileSelected($event)"
+    />
+    <div class="branding-settings__actions">
+      <gbt-button
+        text="Importer"
+        [loading]="uploadingFavicon()"
+        loadingLabel="Chargement en cours"
+        [disabled]="!selectedFaviconFile()"
+        (clicked)="uploadFavicon()"
+      />
+      <gbt-button
+        text="Réinitialiser"
+        variant="secondary"
+        [disabled]="uploadingFavicon()"
+        (clicked)="resetFavicon()"
+      />
+    </div>
+    @if (faviconError(); as message) {
+      <p class="gbt-form-error" role="alert">{{ message }}</p>
+    }
+  </gbt-card>
+</div>

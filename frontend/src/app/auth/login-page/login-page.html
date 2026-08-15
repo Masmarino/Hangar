@@ -1,0 +1,93 @@
+<main class="auth-layout">
+  <div class="auth-layout__card">
+    <h1 class="sr-only">Connexion à Hangar</h1>
+    <img src="/api/branding/logo" alt="Hangar logo" class="auth-layout__logo" />
+    @if (!mfaToken()) {
+      @if (ssoType() === 'oidc') {
+        <p>Cette organisation utilise l'authentification unique (OIDC).</p>
+        <a href="/api/auth/sso/oidc/login" class="auth-layout__link"
+          >Se connecter avec le fournisseur d'identité</a
+        >
+      } @else {
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <p class="gbt-form-required-note">
+            Les champs marqués d'un astérisque (*) sont obligatoires.
+          </p>
+          <gbt-input
+            label="Nom d'utilisateur"
+            formControlName="username"
+            [required]="true"
+            autocomplete="username"
+          />
+          <gbt-input
+            label="Mot de passe"
+            type="password"
+            formControlName="password"
+            [required]="true"
+            autocomplete="current-password"
+            showPasswordLabel="Afficher le mot de passe"
+            hidePasswordLabel="Masquer le mot de passe"
+          />
+          @if (errorMessage(); as message) {
+            <p class="gbt-form-error" role="alert">{{ message }}</p>
+          }
+          <gbt-button
+            text="Se connecter"
+            type="submit"
+            [loading]="submitting()"
+            loadingLabel="Chargement en cours"
+            [disabled]="form.invalid || submitting()"
+          />
+        </form>
+        @if (registrationEnabled()) {
+          <a routerLink="/register" class="auth-layout__link">Créer un compte</a>
+        }
+      }
+    } @else if (mfaSetupRequired()) {
+      <app-mfa-enrollment [mfaToken]="mfaToken()!" (completed)="onEnrollmentCompleted()" />
+    } @else {
+      @if (mfaHasTotp()) {
+        <form [formGroup]="mfaForm" (ngSubmit)="submitMfa()">
+          <p class="gbt-form-required-note">
+            Les champs marqués d'un astérisque (*) sont obligatoires.
+          </p>
+          <gbt-input
+            [label]="useBackupCode() ? 'Code de secours' : 'Code de vérification'"
+            formControlName="code"
+            [required]="true"
+            [autocomplete]="useBackupCode() ? 'off' : 'one-time-code'"
+          />
+          @if (errorMessage(); as message) {
+            <p class="gbt-form-error" role="alert">{{ message }}</p>
+          }
+          <gbt-button
+            text="Vérifier"
+            type="submit"
+            [loading]="submitting()"
+            loadingLabel="Chargement en cours"
+            [disabled]="mfaForm.invalid || submitting()"
+          />
+          <button type="button" class="auth-layout__link" (click)="toggleBackupCode()">
+            {{
+              useBackupCode()
+                ? "Utiliser l'application d'authentification"
+                : 'Utiliser un code de secours'
+            }}
+          </button>
+        </form>
+      } @else if (errorMessage(); as message) {
+        <p class="gbt-form-error" role="alert">{{ message }}</p>
+      }
+      @if (passkeysSupported && mfaHasPasskey()) {
+        <gbt-button
+          text="Utiliser une clé d'accès"
+          variant="secondary"
+          [loading]="submitting()"
+          loadingLabel="Chargement en cours"
+          [disabled]="submitting()"
+          (clicked)="submitPasskey()"
+        />
+      }
+    }
+  </div>
+</main>

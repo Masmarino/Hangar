@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT host, port, username, encrypted_password, password_nonce, from_name, from_address, security FROM smtp_settings WHERE organization_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "host",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "port",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "username",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "encrypted_password",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 4,
+        "name": "password_nonce",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 5,
+        "name": "from_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "from_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "security",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a0aaff7fd7c9afd555bfb2bc61571fc9c977f507bcbb15d68bd213235276b8be"
+}

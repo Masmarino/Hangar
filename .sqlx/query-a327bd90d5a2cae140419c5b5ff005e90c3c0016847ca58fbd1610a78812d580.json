@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT t.image_name, t.tag, m.digest, m.media_type, m.created_at FROM docker_tags t JOIN docker_manifests m ON m.id = t.manifest_id WHERE t.package_repository_id = $1 ORDER BY t.image_name, t.tag",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "image_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "tag",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "digest",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "media_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a327bd90d5a2cae140419c5b5ff005e90c3c0016847ca58fbd1610a78812d580"
+}

@@ -1,0 +1,415 @@
+<div class="container">
+  <a [routerLink]="['/repositories', repositoryId]" class="package-detail-page__back">← Retour au dépôt</a>
+
+  @if (deleteError(); as message) {
+    <p class="gbt-form-error" role="alert">{{ message }}</p>
+  }
+
+  @if (loading()) {
+    <p>Chargement…</p>
+  } @else if (format === 'npm' && npmDetails(); as details) {
+    @if (details.dist_tags.length > 0) {
+      <gbt-card>
+        <p class="package-detail__eyebrow">Tags</p>
+        <div class="package-detail__dist-tags">
+          @for (tag of details.dist_tags; track tag.tag) {
+            <span class="package-detail__dist-tag">{{ tag.tag }} → {{ tag.version }}</span>
+          }
+        </div>
+      </gbt-card>
+    }
+
+    <gbt-card>
+      <p class="package-detail__eyebrow">
+        {{ details.versions.length }} version{{ details.versions.length !== 1 ? 's' : '' }}
+      </p>
+      <table class="package-detail__table">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Publiée le</th>
+            <th>Taille</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (version of pagedVersions(); track version.version) {
+            <tr>
+              <td>
+                <span class="package-detail__version">{{ version.version }}</span>
+                @if (version.deprecated) {
+                  <span
+                    class="package-detail__badge gbt-tooltip-trigger"
+                    tabindex="0"
+                    [attr.aria-label]="'Déprécié : ' + (version.deprecated_message || 'aucune raison fournie')"
+                  >
+                    déprécié
+                    @if (version.deprecated_message) {
+                      <span class="gbt-tooltip" aria-hidden="true">{{ version.deprecated_message }}</span>
+                    }
+                  </span>
+                }
+              </td>
+              <td>{{ version.published_at | date: 'short' }}</td>
+              <td>{{ version.size_bytes | formatBytes }}</td>
+              <td class="package-detail__actions">
+                @if (canWrite()) {
+                  <gbt-button
+                    text="Supprimer"
+                    variant="danger"
+                    size="small"
+                    [attr.data-testid]="'delete-version-' + version.version"
+                    (clicked)="deleteVersion(version.version)"
+                  />
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (versionsTotalPages() > 1) {
+        <div class="package-detail__pagination">
+          <gbt-button
+            text="Précédent"
+            variant="secondary"
+            size="small"
+            [disabled]="versionsPage() <= 1"
+            (clicked)="goToVersionsPage(versionsPage() - 1)"
+          />
+          <span class="package-detail__pagination-status">
+            Page {{ versionsPage() }} sur {{ versionsTotalPages() }}
+          </span>
+          <gbt-button
+            text="Suivant"
+            variant="secondary"
+            size="small"
+            [disabled]="versionsPage() >= versionsTotalPages()"
+            (clicked)="goToVersionsPage(versionsPage() + 1)"
+          />
+        </div>
+      }
+    </gbt-card>
+
+    <gbt-card>
+      <div class="package-detail__audit-header">
+        <p class="package-detail__eyebrow">Sécurité</p>
+        @if (canWrite()) {
+          <gbt-button
+            text="Relancer le scan"
+            variant="secondary"
+            size="small"
+            [loading]="auditLoading()"
+            loadingLabel="Chargement en cours"
+            (clicked)="rescan()"
+          />
+        }
+      </div>
+      @if (auditLoading()) {
+        <p class="package-detail__audit-status">Vérification des vulnérabilités connues…</p>
+      } @else if (auditFailed()) {
+        <p class="package-detail__audit-status">
+          Impossible de vérifier les vulnérabilités pour le moment (base d'alertes npm injoignable).
+        </p>
+      } @else if (auditAdvisories(); as advisories) {
+        @if (advisories.length === 0) {
+          <p class="package-detail__audit-status package-detail__audit-status--clean">
+            Aucune vulnérabilité connue pour les versions publiées.
+          </p>
+        } @else {
+          <ul class="package-detail__advisories">
+            @for (advisory of advisories; track advisory.id) {
+              <li class="package-detail__advisory">
+                <span class="package-detail__severity" [class]="advisory.severity | severityClass">
+                  {{ advisory.severity }}
+                </span>
+                <div class="package-detail__advisory-body">
+                  <a [href]="advisory.url" target="_blank" rel="noopener noreferrer">{{ advisory.title }} <span class="sr-only">(nouvelle fenêtre)</span></a>
+                  <p class="package-detail__advisory-meta">
+                    Versions concernées : <code>{{ advisory.vulnerable_versions }}</code>
+                    @if (advisory.cvss_score !== null) {
+                      · CVSS {{ advisory.cvss_score }}
+                    }
+                  </p>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      }
+    </gbt-card>
+
+    @if (latestVersion(); as scannedVersion) {
+      <gbt-card>
+        <div class="package-detail__audit-header">
+          <p class="package-detail__eyebrow">
+            Analyse des dépendances (version {{ scannedVersion }})
+          </p>
+          @if (canWrite()) {
+            <gbt-button
+              text="Lancer un scan approfondi"
+              variant="secondary"
+              size="small"
+              [loading]="depAuditScanning()"
+              loadingLabel="Chargement en cours"
+              (clicked)="runDependencyScan()"
+            />
+          }
+        </div>
+        @if (depAuditLoading()) {
+          <p class="package-detail__audit-status">Chargement du dernier résultat…</p>
+        } @else if (depAuditFailed()) {
+          <p class="package-detail__audit-status">
+            Impossible d'effectuer l'analyse pour le moment (base d'alertes npm injoignable).
+          </p>
+        } @else if (depAuditResult(); as result) {
+          <p class="package-detail__audit-meta">
+            Dernière analyse le {{ result.scanned_at | date: 'short' }} · {{ result.packages_scanned }}
+            dépendance{{ result.packages_scanned !== 1 ? 's' : '' }} analysée{{ result.packages_scanned !== 1 ? 's' : '' }}
+            @if (result.truncated) {
+              · analyse partielle (arbre de dépendances trop volumineux pour être couvert entièrement)
+            }
+          </p>
+          @if (result.findings.length === 0) {
+            <p class="package-detail__audit-status package-detail__audit-status--clean">
+              Aucune vulnérabilité connue dans l'arbre de dépendances.
+            </p>
+          } @else {
+            <gbt-select
+              class="package-detail__severity-filter"
+              placeholder="Toutes les criticités"
+              [options]="npmSeverityOptions"
+              [multiple]="true"
+              [selectedCountLabel]="selectedCountLabel"
+              [ngModel]="depAuditSeverityFilter()"
+              (ngModelChange)="onDepAuditSeverityFilterChange($event)"
+            />
+            @if (filteredFindings().length === 0) {
+              <p class="package-detail__audit-status">
+                Aucune vulnérabilité ne correspond aux criticités sélectionnées.
+              </p>
+            } @else {
+              <ul class="package-detail__advisories">
+                @for (finding of pagedFindings(); track finding.dependency_name + finding.advisory.id) {
+                  <li class="package-detail__advisory">
+                    <span class="package-detail__severity" [class]="finding.advisory.severity | severityClass">
+                      {{ finding.advisory.severity }}
+                    </span>
+                    <div class="package-detail__advisory-body">
+                      <a [href]="finding.advisory.url" target="_blank" rel="noopener noreferrer">{{ finding.advisory.title }} <span class="sr-only">(nouvelle fenêtre)</span></a>
+                      <p class="package-detail__advisory-meta">
+                        <code>{{ finding.dependency_name }}&#64;{{ finding.dependency_version }}</code>
+                        @if (finding.advisory.cvss_score !== null) {
+                          · CVSS {{ finding.advisory.cvss_score }}
+                        }
+                      </p>
+                    </div>
+                  </li>
+                }
+              </ul>
+              @if (depAuditTotalPages() > 1) {
+                <div class="package-detail__pagination">
+                  <gbt-button
+                    text="Précédent"
+                    variant="secondary"
+                    size="small"
+                    [disabled]="depAuditPage() <= 1"
+                    (clicked)="goToDepAuditPage(depAuditPage() - 1)"
+                  />
+                  <span class="package-detail__pagination-status">
+                    Page {{ depAuditPage() }} sur {{ depAuditTotalPages() }}
+                  </span>
+                  <gbt-button
+                    text="Suivant"
+                    variant="secondary"
+                    size="small"
+                    [disabled]="depAuditPage() >= depAuditTotalPages()"
+                    (clicked)="goToDepAuditPage(depAuditPage() + 1)"
+                  />
+                </div>
+              }
+            }
+          }
+        } @else {
+          <p class="package-detail__audit-status">
+            Aucune analyse effectuée pour le moment. Lancez un scan pour vérifier les dépendances transitives.
+          </p>
+        }
+      </gbt-card>
+    }
+
+    @if (canWrite()) {
+      <gbt-card class="package-detail__danger">
+        <p class="package-detail__danger-text">
+          Supprime toutes les versions de <strong>{{ name }}</strong> et ne peut pas être annulé.
+        </p>
+        <gbt-button text="Supprimer tout le package" variant="danger" (clicked)="deleteWholePackage()" />
+      </gbt-card>
+    }
+  } @else if (format === 'docker' && dockerDetails(); as details) {
+    <gbt-card>
+      <p class="package-detail__eyebrow">
+        {{ details.tags.length }} tag{{ details.tags.length !== 1 ? 's' : '' }}
+      </p>
+      <table class="package-detail__table">
+        <thead>
+          <tr>
+            <th>Tag</th>
+            <th>Digest</th>
+            <th>Type</th>
+            <th>Mise à jour</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tag of pagedTags(); track tag.tag) {
+            <tr>
+              <td class="package-detail__version">{{ tag.tag }}</td>
+              <td class="package-detail__digest" [title]="tag.digest" [attr.aria-label]="tag.digest">{{ tag.digest | shortDigest }}</td>
+              <td>{{ tag.media_type }}</td>
+              <td>{{ tag.created_at | date: 'short' }}</td>
+              <td class="package-detail__actions">
+                @if (canWrite()) {
+                  <gbt-button
+                    text="Supprimer"
+                    variant="danger"
+                    size="small"
+                    [attr.data-testid]="'delete-tag-' + tag.tag"
+                    (clicked)="deleteTag(tag.tag)"
+                  />
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (tagsTotalPages() > 1) {
+        <div class="package-detail__pagination">
+          <gbt-button
+            text="Précédent"
+            variant="secondary"
+            size="small"
+            [disabled]="tagsPage() <= 1"
+            (clicked)="goToTagsPage(tagsPage() - 1)"
+          />
+          <span class="package-detail__pagination-status">
+            Page {{ tagsPage() }} sur {{ tagsTotalPages() }}
+          </span>
+          <gbt-button
+            text="Suivant"
+            variant="secondary"
+            size="small"
+            [disabled]="tagsPage() >= tagsTotalPages()"
+            (clicked)="goToTagsPage(tagsPage() + 1)"
+          />
+        </div>
+      }
+    </gbt-card>
+
+    @if (scannedTag(); as scannedTagValue) {
+      <gbt-card>
+        <div class="package-detail__audit-header">
+          <p class="package-detail__eyebrow">Sécurité (tag {{ scannedTagValue }})</p>
+          @if (canWrite()) {
+            <gbt-button
+              text="Lancer un scan"
+              variant="secondary"
+              size="small"
+              [loading]="imageScanScanning()"
+              loadingLabel="Chargement en cours"
+              (clicked)="runImageScan()"
+            />
+          }
+        </div>
+        @if (imageScanLoading()) {
+          <p class="package-detail__audit-status">Chargement du dernier résultat…</p>
+        } @else if (imageScanFailed()) {
+          <p class="package-detail__audit-status">
+            Impossible d'effectuer le scan pour le moment (Trivy indisponible ou erreur d'analyse).
+          </p>
+        } @else if (imageScanResult(); as result) {
+          <p class="package-detail__audit-meta">
+            Dernier scan le {{ result.scanned_at | date: 'short' }} · {{ result.vulnerabilities.length }}
+            vulnérabilité{{ result.vulnerabilities.length !== 1 ? 's' : '' }}
+          </p>
+          @if (result.vulnerabilities.length === 0) {
+            <p class="package-detail__audit-status package-detail__audit-status--clean">
+              Aucune vulnérabilité connue dans cette image.
+            </p>
+          } @else {
+            <gbt-select
+              class="package-detail__severity-filter"
+              placeholder="Toutes les criticités"
+              [options]="dockerSeverityOptions"
+              [multiple]="true"
+              [selectedCountLabel]="selectedCountLabel"
+              [ngModel]="imageScanSeverityFilter()"
+              (ngModelChange)="onImageScanSeverityFilterChange($event)"
+            />
+            @if (filteredVulnerabilities().length === 0) {
+              <p class="package-detail__audit-status">
+                Aucune vulnérabilité ne correspond aux criticités sélectionnées.
+              </p>
+            } @else {
+              <ul class="package-detail__advisories">
+                @for (vuln of pagedVulnerabilities(); track vuln.id + vuln.package_name) {
+                  <li class="package-detail__advisory">
+                    <span class="package-detail__severity" [class]="vuln.severity | severityClass">
+                      {{ vuln.severity }}
+                    </span>
+                    <div class="package-detail__advisory-body">
+                      @if (vuln.primary_url) {
+                        <a [href]="vuln.primary_url" target="_blank" rel="noopener noreferrer">{{ vuln.title ?? vuln.id }} <span class="sr-only">(nouvelle fenêtre)</span></a>
+                      } @else {
+                        <span>{{ vuln.title ?? vuln.id }}</span>
+                      }
+                      <p class="package-detail__advisory-meta">
+                        <code>{{ vuln.package_name }}&#64;{{ vuln.installed_version }}</code>
+                        @if (vuln.fixed_version) {
+                          · corrigé en <code>{{ vuln.fixed_version }}</code>
+                        }
+                      </p>
+                    </div>
+                  </li>
+                }
+              </ul>
+              @if (imageScanTotalPages() > 1) {
+                <div class="package-detail__pagination">
+                  <gbt-button
+                    text="Précédent"
+                    variant="secondary"
+                    size="small"
+                    [disabled]="imageScanPage() <= 1"
+                    (clicked)="goToImageScanPage(imageScanPage() - 1)"
+                  />
+                  <span class="package-detail__pagination-status">
+                    Page {{ imageScanPage() }} sur {{ imageScanTotalPages() }}
+                  </span>
+                  <gbt-button
+                    text="Suivant"
+                    variant="secondary"
+                    size="small"
+                    [disabled]="imageScanPage() >= imageScanTotalPages()"
+                    (clicked)="goToImageScanPage(imageScanPage() + 1)"
+                  />
+                </div>
+              }
+            }
+          }
+        } @else {
+          <p class="package-detail__audit-status">
+            Aucun scan effectué pour le moment. Lancez un scan pour vérifier les vulnérabilités connues.
+          </p>
+        }
+      </gbt-card>
+    }
+
+    @if (canWrite()) {
+      <gbt-card class="package-detail__danger">
+        <p class="package-detail__danger-text">
+          Supprime toutes les étiquettes de <strong>{{ name }}</strong> et ne peut pas être annulé.
+        </p>
+        <gbt-button text="Supprimer toute l'image" variant="danger" (clicked)="deleteWholeImage()" />
+      </gbt-card>
+    }
+  }
+</div>

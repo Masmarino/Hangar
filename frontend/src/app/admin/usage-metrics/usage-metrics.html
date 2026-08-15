@@ -1,0 +1,35 @@
+<div class="container">
+  <gbt-card heading="Espace utilisé par dépôt" icon="hard-drive">
+    <gbt-dimension-card
+      [rows]="chartData()"
+      caption="Dépôts les plus volumineux"
+      labelColumn="Dépôt"
+      valueColumn="Espace utilisé"
+      emptyMessage="Aucun dépôt."
+      [locale]="locale"
+    />
+  </gbt-card>
+
+  @if (quotasInUse().length > 0) {
+    <gbt-card heading="Quotas de stockage" icon="bar-chart">
+      @for (usage of quotasInUse(); track usage.repository_id) {
+        <gbt-gauge-bar
+          [label]="usage.name"
+          [value]="usage.used_bytes"
+          [max]="usage.quota_bytes!"
+          [formattedValue]="quotaFormatter(usage.used_bytes, usage.quota_bytes!)"
+          warningLabel="Avertissement"
+          criticalLabel="Critique"
+        />
+      }
+    </gbt-card>
+  }
+
+  <gbt-table
+    caption="Utilisation par dépôt"
+    emptyMessage="Aucune donnée disponible"
+    [data]="usages()"
+    [columns]="columns"
+    [trackBy]="rowId"
+  />
+</div>

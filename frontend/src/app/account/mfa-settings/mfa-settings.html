@@ -1,0 +1,112 @@
+<gbt-card heading="Double authentification (TOTP)" icon="shield">
+<div class="stack">
+  @switch (state()) {
+    @case ('loading') {
+      <p>Chargement…</p>
+    }
+
+    @case ('disabled') {
+      <p>La double authentification n'est pas activée sur ce compte.</p>
+      <gbt-button text="Activer" (clicked)="startEnrollment()" />
+    }
+
+    @case ('enrolling') {
+      <p>
+        Scannez ce QR code avec votre application d'authentification (Google Authenticator, Authy,
+        1Password…), ou saisissez le code manuellement :
+      </p>
+      @if (qrCodeDataUrl(); as dataUrl) {
+        <img [src]="dataUrl" alt="QR code d'activation" class="mfa-settings__qr" />
+      }
+      <p class="mfa-settings__secret">{{ enrollmentSecret() }}</p>
+      <gbt-input
+        label="Code de vérification"
+        [ngModel]="confirmCode()"
+        (ngModelChange)="confirmCode.set($event)"
+      />
+      @if (errorMessage(); as message) {
+        <p class="gbt-form-error" role="alert">{{ message }}</p>
+      }
+      <div class="mfa-settings__actions">
+        <gbt-button
+          text="Confirmer"
+          [loading]="submitting()"
+          loadingLabel="Chargement en cours"
+          [disabled]="confirmCode().trim() === ''"
+          (clicked)="confirmEnrollment()"
+        />
+        <gbt-button text="Annuler" variant="secondary" (clicked)="cancelEnrollment()" />
+      </div>
+    }
+
+    @case ('backup-codes') {
+      <p>
+        Double authentification activée. Conservez ces codes de secours dans un endroit sûr —
+        chacun ne peut être utilisé qu'une seule fois, si vous perdez l'accès à votre application
+        d'authentification.
+      </p>
+      <ul class="mfa-settings__codes">
+        @for (code of backupCodes(); track code) {
+          <li>{{ code }}</li>
+        }
+      </ul>
+      <gbt-button text="J'ai sauvegardé ces codes" (clicked)="acknowledgeBackupCodes()" />
+    }
+
+    @case ('enabled') {
+      <p>Double authentification activée.</p>
+      <p>Codes de secours restants : {{ status()?.backup_codes_remaining }}</p>
+
+      @if (regeneratedCodes(); as codes) {
+        <p>Nouveaux codes de secours — les anciens ne fonctionnent plus :</p>
+        <ul class="mfa-settings__codes">
+          @for (code of codes; track code) {
+            <li>{{ code }}</li>
+          }
+        </ul>
+        <gbt-button text="J'ai sauvegardé ces codes" (clicked)="dismissRegeneratedCodes()" />
+      } @else {
+        <div class="mfa-settings__actions">
+          <gbt-input
+            label="Mot de passe actuel"
+            type="password"
+            showPasswordLabel="Afficher le mot de passe"
+            hidePasswordLabel="Masquer le mot de passe"
+            [ngModel]="regeneratePassword()"
+            (ngModelChange)="regeneratePassword.set($event)"
+          />
+          <gbt-button
+            text="Régénérer les codes de secours"
+            variant="secondary"
+            [loading]="submitting()"
+            loadingLabel="Chargement en cours"
+            (clicked)="regenerateBackupCodes()"
+          />
+        </div>
+
+        <div class="mfa-settings__actions">
+          <gbt-input
+            label="Mot de passe actuel"
+            type="password"
+            showPasswordLabel="Afficher le mot de passe"
+            hidePasswordLabel="Masquer le mot de passe"
+            [ngModel]="disablePassword()"
+            (ngModelChange)="disablePassword.set($event)"
+          />
+          <gbt-button
+            text="Désactiver la double authentification"
+            variant="danger"
+            [loading]="submitting()"
+            loadingLabel="Chargement en cours"
+            (clicked)="disable()"
+          />
+        </div>
+
+        @if (errorMessage(); as message) {
+          <p class="gbt-form-error" role="alert">{{ message }}</p>
+        }
+      }
+    }
+  }
+</div>
+</gbt-card>

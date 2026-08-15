@@ -1,0 +1,43 @@
+<main class="auth-layout">
+  <div class="auth-layout__card">
+    <img src="/api/branding/logo" alt="Hangar logo" class="auth-layout__logo" />
+    @if (tokenMissing) {
+      <h1>Activation impossible</h1>
+      <p class="gbt-form-error" role="alert">Lien d'activation invalide : aucun jeton fourni.</p>
+    } @else {
+      <h1>Activer votre compte</h1>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <p class="gbt-form-required-note">Les champs marqués d'un astérisque (*) sont obligatoires.</p>
+        <gbt-input
+          label="Nouveau mot de passe"
+          type="password"
+          showPasswordLabel="Afficher le mot de passe"
+          hidePasswordLabel="Masquer le mot de passe"
+          formControlName="newPassword"
+          [required]="true"
+          autocomplete="new-password"
+        />
+        <gbt-input
+          label="Confirmer le mot de passe"
+          type="password"
+          showPasswordLabel="Afficher le mot de passe"
+          hidePasswordLabel="Masquer le mot de passe"
+          formControlName="confirmPassword"
+          [required]="true"
+          autocomplete="new-password"
+          [errorMessage]="passwordMismatch ? 'Les mots de passe ne correspondent pas.' : null"
+        />
+        @if (errorMessage(); as message) {
+          <p class="gbt-form-error" role="alert">{{ message }}</p>
+        }
+        <gbt-button
+          text="Activer mon compte"
+          type="submit"
+          [loading]="submitting()"
+          loadingLabel="Chargement en cours"
+          [disabled]="form.invalid || passwordMismatch || submitting()"
+        />
+      </form>
+    }
+  </div>
+</main>

@@ -1,0 +1,92 @@
+<div class="container">
+  @if (stats(); as s) {
+    <section>
+      <gbt-card heading="Utilisateurs" icon="users">
+        <p>{{ s.total_users }}</p>
+      </gbt-card>
+      <gbt-card heading="Dépôts" icon="package">
+        <p>{{ s.total_repositories }}</p>
+      </gbt-card>
+      <gbt-card heading="Permissions actives" icon="shield">
+        <p>{{ s.total_active_permissions }}</p>
+      </gbt-card>
+    </section>
+  }
+
+  <section class="admin-dashboard__charts">
+    <gbt-card heading="Activité (7 derniers jours)" icon="activity">
+      <gbt-dimension-card
+        [rows]="activityChartData()"
+        caption="Événements par jour"
+        labelColumn="Jour"
+        valueColumn="Événements"
+        emptyMessage="Aucune activité."
+        [locale]="locale"
+      />
+    </gbt-card>
+    <gbt-card heading="Dépôts par format" icon="bar-chart">
+      <gbt-dimension-card
+        [rows]="repositoriesByFormatChartData()"
+        caption="Dépôts par format"
+        labelColumn="Format"
+        valueColumn="Dépôts"
+        emptyMessage="Aucun dépôt."
+        [locale]="locale"
+      />
+    </gbt-card>
+  </section>
+
+  <section class="admin-dashboard__charts">
+    <gbt-card heading="Évolution du stockage" icon="hard-drive">
+      <gbt-select
+        card-header-actions
+        placeholder="Sélectionner…"
+        [options]="evolutionDaysOptions"
+        [ngModel]="storageEvolutionDays()"
+        (ngModelChange)="setStorageEvolutionDays($event)"
+      />
+      <div style="height: 18rem">
+        <gbt-line-chart
+          [series]="storageEvolutionSeries()"
+          xKind="time"
+          [locale]="locale"
+          label="Évolution du stockage"
+          tableCaption="Stockage total par relevé"
+          xColumn="Date"
+          emptyMessage="Pas encore assez de mesures."
+        />
+      </div>
+    </gbt-card>
+    <gbt-card heading="Évolution des utilisateurs et dépôts" icon="trending-up">
+      <gbt-select
+        card-header-actions
+        placeholder="Sélectionner…"
+        [options]="evolutionDaysOptions"
+        [ngModel]="countsEvolutionDays()"
+        (ngModelChange)="setCountsEvolutionDays($event)"
+      />
+      <div style="height: 18rem">
+        <gbt-line-chart
+          [series]="countsEvolutionSeries()"
+          xKind="time"
+          [locale]="locale"
+          label="Évolution des utilisateurs et dépôts"
+          tableCaption="Utilisateurs et dépôts par relevé"
+          xColumn="Date"
+          emptyMessage="Pas encore assez de mesures."
+        />
+      </div>
+    </gbt-card>
+  </section>
+
+  <gbt-card heading="Activité récente" icon="history">
+    @for (
+      event of recentEvents();
+      track event.occurred_at + event.event_type + event.aggregate_id
+    ) {
+      <p>{{ event.occurred_at | date: 'short' }} · {{ event.aggregate_type }} · {{ event.event_type }}</p>
+    } @empty {
+      <p>Aucune activité récente.</p>
+    }
+  </gbt-card>
+</div>

@@ -1,0 +1,17 @@
+<app-organization-context-banner />
+
+@if (stats(); as s) {
+  <div class="container">
+    <gbt-card heading="Utilisateurs" icon="users">
+      <p>{{ s.total_users }}</p>
+    </gbt-card>
+    <gbt-card heading="Dépôts" icon="package">
+      <p>{{ s.total_repositories }}</p>
+    </gbt-card>
+    <gbt-card heading="Permissions actives" icon="shield">
+      <p>{{ s.total_active_permissions }}</p>
+    </gbt-card>
+  </div>
+}
+
+<app-usage-metrics />

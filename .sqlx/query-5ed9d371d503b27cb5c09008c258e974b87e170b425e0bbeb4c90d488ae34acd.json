@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO npm_packages (id, package_repository_id, name) VALUES ($1, $2, 'left-pad')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5ed9d371d503b27cb5c09008c258e974b87e170b425e0bbeb4c90d488ae34acd"
+}

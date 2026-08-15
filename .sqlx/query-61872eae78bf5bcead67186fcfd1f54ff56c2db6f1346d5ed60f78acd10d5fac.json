@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM npm_dist_tags WHERE npm_package_id = $1 AND tag = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "61872eae78bf5bcead67186fcfd1f54ff56c2db6f1346d5ed60f78acd10d5fac"
+}

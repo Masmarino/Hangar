@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO npm_packages (id, package_repository_id, name, created_at, updated_at, metadata_fetched_at, cached_metadata) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Timestamptz",
+        "Timestamptz",
+        "Timestamptz",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fb693f399b3e94dab90a7b7e1fb581cfc42807f5b080ed18175092ef2210cbb8"
+}

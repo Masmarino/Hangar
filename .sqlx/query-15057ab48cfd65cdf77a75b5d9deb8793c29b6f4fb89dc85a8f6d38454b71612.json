@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM npm_package_versions WHERE npm_package_id = $1 AND version = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "15057ab48cfd65cdf77a75b5d9deb8793c29b6f4fb89dc85a8f6d38454b71612"
+}

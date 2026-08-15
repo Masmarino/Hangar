@@ -1,0 +1,40 @@
+:host {
+  display: block;
+}
+
+p {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.branding-settings__logo-preview {
+  display: block;
+  // Fixed box (matching the width/height attributes on the <img> itself) — reserved
+  // before the actual logo loads, so an arbitrarily-sized upload can't shift the layout.
+  width: 260px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--site-border-radius-sm);
+  padding: 0.5rem;
+  background-color: var(--bg-principal);
+}
+
+.branding-settings__favicon-preview {
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--site-border-radius-sm);
+  padding: 0.25rem;
+  background-color: var(--bg-principal);
+}
+
+.branding-settings__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}

@@ -1,0 +1,8 @@
+<gbt-modal [isOpen]="true" heading="Nouvelle organisation" closeLabel="Fermer" (closed)="cancelled.emit()">
+  <form class="stack" [formGroup]="form" (ngSubmit)="submit()">
+    <p class="gbt-form-required-note">Les champs marqués d'un astérisque (*) sont obligatoires.</p>
+    <gbt-input label="Sous-domaine" formControlName="slug" [required]="true" placeholder="acme" />
+    <gbt-input label="Nom" formControlName="displayName" [required]="true" placeholder="Acme Corp" />
+    <gbt-button text="Créer" type="submit" [disabled]="form.invalid" [loading]="creating()" loadingLabel="Chargement en cours" />
+  </form>
+</gbt-modal>

@@ -1,0 +1,34 @@
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1.5rem;
+  max-width: 480px;
+  margin-bottom: 1rem;
+}
+
+hg-gauge-bar {
+  display: block;
+  max-width: 320px;
+}
+
+dt {
+  color: var(--text-discret);
+  font-size: 0.875rem;
+}
+
+dd {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.status-up {
+  color: var(--color-success-base);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-down {
+  color: var(--color-error-base);
+  font-weight: 600;
+  text-transform: uppercase;
+}

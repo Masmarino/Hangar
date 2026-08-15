@@ -1,0 +1,66 @@
+<div class="container">
+  @if (revokeError(); as message) {
+    <p class="gbt-form-error" role="alert">{{ message }}</p>
+  }
+
+  <gbt-card heading="Jetons actifs" icon="key">
+    @if (activeTokens().length === 0) {
+      <p>Aucun jeton actif.</p>
+    } @else {
+      <table class="api-tokens__table">
+        <thead>
+          <tr>
+            <th>Utilisateur</th>
+            <th>Libellé</th>
+            <th>Créé le</th>
+            <th>Dernière utilisation</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (token of activeTokens(); track token.id) {
+            <tr>
+              <td>{{ token.username }}</td>
+              <td>{{ token.label }}</td>
+              <td>{{ token.created_at | date: 'short' }}</td>
+              <td>{{ token.last_used_at ? (token.last_used_at | date: 'short') : 'Jamais' }}</td>
+              <td class="api-tokens__actions">
+                <gbt-button
+                  text="Révoquer"
+                  variant="danger"
+                  size="small"
+                  (clicked)="revoke(token)"
+                />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </gbt-card>
+
+  @if (revokedTokens().length > 0) {
+    <gbt-card heading="Jetons révoqués" icon="x">
+      <table class="api-tokens__table">
+        <thead>
+          <tr>
+            <th>Utilisateur</th>
+            <th>Libellé</th>
+            <th>Créé le</th>
+            <th>Révoqué le</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (token of revokedTokens(); track token.id) {
+            <tr>
+              <td>{{ token.username }}</td>
+              <td>{{ token.label }}</td>
+              <td>{{ token.created_at | date: 'short' }}</td>
+              <td>{{ token.revoked_at | date: 'short' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </gbt-card>
+  }
+</div>

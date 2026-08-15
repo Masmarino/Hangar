@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO docker_blobs (digest, size_bytes, storage_key, reference_count) VALUES ($1, $2, $3, 0) ON CONFLICT (digest) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6a37a5b14bfded7fcceeb132317ac7ca83840b36667e63323aa649fc1809cfb7"
+}

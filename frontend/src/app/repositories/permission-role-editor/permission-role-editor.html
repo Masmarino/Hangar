@@ -1,0 +1,11 @@
+<gbt-modal [isOpen]="isOpen()" [heading]="modalTitle()" closeLabel="Fermer" (closed)="closed.emit()">
+  <gbt-select
+    label="Rôle"
+    placeholder="Sélectionner…"
+    [options]="roleOptions"
+    [ngModel]="selectedRole()"
+    (ngModelChange)="onRoleSelect($event)"
+  />
+  <gbt-button text="Enregistrer" data-testid="save-role" [loading]="saving()" (clicked)="save()" loadingLabel="Chargement en cours" />
+  <gbt-button text="Révoquer" variant="danger" data-testid="revoke" [loading]="saving()" (clicked)="revoke()" loadingLabel="Chargement en cours" />
+</gbt-modal>

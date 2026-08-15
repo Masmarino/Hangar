@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT version FROM domain_events WHERE aggregate_type = 'Permission' AND aggregate_id = $1 ORDER BY version DESC LIMIT 1 FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "version",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3c90b1ace0af1d4be9b88d75cb8167bc91c979f3ac240a5d3934bf394537a3e8"
+}

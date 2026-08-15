@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO docker_repository_blobs (package_repository_id, blob_digest) VALUES ($1, $2) ON CONFLICT (package_repository_id, blob_digest) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8d5122dc50dd412154e3e5be55fbf435a73e17aab948de949f752ed5ea6a28c5"
+}

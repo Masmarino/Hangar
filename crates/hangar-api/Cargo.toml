@@ -1,0 +1,31 @@
+[package]
+name = "hangar-api"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+hangar-domain = { path = "../hangar-domain" }
+hangar-application = { path = "../hangar-application" }
+hangar-infrastructure = { path = "../hangar-infrastructure" }
+hangar-npm = { path = "../hangar-npm" }
+hangar-docker = { path = "../hangar-docker" }
+axum = "0.7"
+axum-extra = { version = "0.9", features = ["typed-header", "cookie"] }
+async-trait = "0.1"
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+tower-http = { version = "0.5", features = ["cors", "trace", "fs", "compression-full", "set-header"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "migrate"] }
+dotenvy = "0.15"
+webauthn-rs = "0.5.5"
+webauthn-rs-proto = "0.5.5"
+
+[dev-dependencies]
+tower = { version = "0.4", features = ["util"] }
+base64 = "0.23.1"

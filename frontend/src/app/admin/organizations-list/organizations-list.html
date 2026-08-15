@@ -1,0 +1,19 @@
+<gbt-button text="Nouvelle organisation" (clicked)="showCreateModal.set(true)" />
+@if (loading()) {
+  <p>Chargement…</p>
+} @else if (error(); as message) {
+  <p class="gbt-form-error" role="alert">{{ message }}</p>
+} @else {
+  <gbt-table
+    caption="Organisations"
+    emptyMessage="Aucune organisation"
+    [clickableRows]="true"
+    [data]="organizations()"
+    [columns]="columns"
+    [trackBy]="rowId"
+    (rowClick)="openDetail($event)"
+  />
+}
+@if (showCreateModal()) {
+  <app-create-organization-modal (created)="onOrganizationCreated()" (cancelled)="showCreateModal.set(false)" />
+}

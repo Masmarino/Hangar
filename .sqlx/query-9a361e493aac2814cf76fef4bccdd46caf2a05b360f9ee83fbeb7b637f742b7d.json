@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO organizations (id, slug, display_name, is_public) VALUES (gen_random_uuid(), 'acme', 'Acme', false) RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "9a361e493aac2814cf76fef4bccdd46caf2a05b360f9ee83fbeb7b637f742b7d"
+}

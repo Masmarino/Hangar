@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE docker_blobs SET reference_count = reference_count - 1 WHERE digest = $1 RETURNING reference_count, storage_key",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "reference_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "storage_key",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a2bf629e6fd1afe04afc739a802528023cdf23e6185c5f3b3946457b65a289cc"
+}

@@ -1,0 +1,190 @@
+@if (repository(); as repo) {
+  <div class="container">
+    <gbt-tabs>
+      <gbt-tab label="Aperçu">
+        <gbt-card>
+          <div class="repository-detail__header">
+            <span class="repository-detail__badge">{{ repo.format }}</span>
+            <span class="repository-detail__badge">{{ repo.repo_type }}</span>
+          </div>
+          @if (isAdmin()) {
+            <div class="d-flex align-items-end gap-4">
+              <gbt-input label="Nom" [ngModel]="newName()" (ngModelChange)="newName.set($event)" />
+              <gbt-button class="mb-3" text="Renommer" [disabled]="newName() === repo.name" [loading]="renaming()" (clicked)="rename()" loadingLabel="Chargement en cours" />
+            </div>
+          }
+          @if (repo.remote_url) {
+            <p class="repository-detail__remote">Dépôt distant : <code>{{ repo.remote_url }}</code></p>
+          }
+        </gbt-card>
+
+        <gbt-card heading="Utilisation" icon="terminal">
+          <app-usage-instructions [repository]="repo" />
+        </gbt-card>
+      </gbt-tab>
+
+      <gbt-tab label="Packages">
+        <gbt-card>
+          <app-package-tree [repositoryId]="repo.id" />
+        </gbt-card>
+      </gbt-tab>
+
+      @if (repo.repo_type === 'group') {
+        <gbt-tab label="Dépôts membres">
+          <gbt-card>
+            @if (repo.group_members.length === 0) {
+              <p>Aucun dépôt membre pour l'instant.</p>
+            } @else if (isAdmin()) {
+              <p>Cliquer sur une ligne pour retirer le dépôt membre du groupe.</p>
+              <gbt-table
+                caption="Dépôts membres du groupe"
+                emptyMessage="Aucune donnée disponible"
+                [clickableRows]="true"
+                [data]="groupMemberRows()"
+                [columns]="memberColumns"
+                [trackBy]="memberRowId"
+                (rowClick)="removeMember($event.id)"
+              />
+            } @else {
+              <gbt-table
+                caption="Dépôts membres du groupe"
+                emptyMessage="Aucune donnée disponible"
+                [data]="groupMemberRows()"
+                [columns]="memberColumns"
+                [trackBy]="memberRowId"
+              />
+            }
+            @if (isAdmin()) {
+              <gbt-input
+                label="ID du dépôt à ajouter"
+                [ngModel]="newMemberId()"
+                (ngModelChange)="newMemberId.set($event)"
+              />
+              <gbt-button text="Ajouter" [loading]="addingMember()" (clicked)="addMember()" loadingLabel="Chargement en cours" />
+            }
+            @if (removeMemberError(); as message) {
+              <p class="gbt-form-error" role="alert">{{ message }}</p>
+            }
+          </gbt-card>
+        </gbt-tab>
+      }
+
+      @if (isAdmin()) {
+        <gbt-tab label="Droits d'accès">
+          <gbt-card>
+            @if (permissions().length === 0) {
+              <p>Personne n'a de droit spécifique sur ce dépôt pour l'instant.</p>
+            } @else {
+              <p>Cliquer sur une ligne pour modifier ou révoquer un droit.</p>
+              <gbt-table
+                caption="Droits d'accès sur ce dépôt"
+                emptyMessage="Aucune donnée disponible"
+                [clickableRows]="true"
+                [data]="permissions()"
+                [columns]="permissionColumns"
+                [trackBy]="permissionRowId"
+                (rowClick)="openRoleEditor($event)"
+              />
+            }
+            <gbt-search-bar
+              placeholder="Nom d'utilisateur"
+              noResultsMessage="Aucun résultat"
+              noResultsHint="Essayez une autre recherche."
+              clearLabel="Effacer la recherche"
+              navigateHint="Naviguer"
+              selectHint="Sélectionner"
+              closeHint="Fermer"
+              [results]="userSearchResults()"
+              [displayFn]="userDisplayFn"
+              [resultsAnnouncement]="resultsAnnouncement"
+              [keepQueryOnSelect]="true"
+              (queryChange)="onGrantUsernameInput($event)"
+              (clear)="onGrantUsernameInput('')"
+              (itemSelected)="selectUser($event)"
+            />
+            <gbt-select
+              label="Rôle"
+              placeholder="Sélectionner…"
+              [options]="roleOptions"
+              [ngModel]="grantRole()"
+              (ngModelChange)="grantRole.set($event)"
+            />
+            <gbt-button text="Accorder" [disabled]="!grantUsername()" [loading]="grantingPermission()" (clicked)="grantPermission()" loadingLabel="Chargement en cours" />
+            @if (grantError(); as message) {
+              <p class="gbt-form-error" role="alert">{{ message }}</p>
+            }
+          </gbt-card>
+
+          @if (editingPermission(); as entry) {
+            <app-permission-role-editor
+              [isOpen]="true"
+              [label]="entry.username"
+              [currentRole]="entry.role"
+              [saving]="savingRole()"
+              (roleChanged)="changeRole($event)"
+              (revoked)="revokeFromEditor()"
+              (closed)="closeRoleEditor()"
+            />
+          }
+        </gbt-tab>
+
+        <gbt-tab label="Paramètres">
+          <gbt-card heading="Quota de stockage" icon="hard-drive">
+            <p>
+              Actuel :
+              {{ repo.quota_bytes === null ? 'illimité' : (repo.quota_bytes | formatBytes) }}
+            </p>
+            <div class="d-flex align-items-end gap-4">
+              <gbt-input
+                label="Quota (Mo, vide = illimité)"
+                [ngModel]="quotaMb()"
+                (ngModelChange)="setQuotaMb($event)"
+                [errorMessage]="quotaError()"
+              />
+              <gbt-button class="mb-3" text="Enregistrer" [loading]="savingQuota()" (clicked)="saveQuota()" loadingLabel="Chargement en cours" />
+            </div>
+            @if (quotaSaved()) {
+              <p class="repository-detail__quota-success">Quota enregistré.</p>
+            }
+          </gbt-card>
+
+          <gbt-card heading="Rétention" icon="history">
+            <p>
+              Actuel :
+              {{
+                repo.retention_keep_last_n === null
+                  ? 'désactivée'
+                  : 'conserver les ' + repo.retention_keep_last_n + ' dernières versions/étiquettes'
+              }}
+            </p>
+            <p class="repository-detail__hint">
+              Purge automatique périodique des versions npm ou étiquettes Docker les plus anciennes
+              au-delà de ce nombre, par paquet/image. Les versions taguées (ex. « latest ») ne sont
+              jamais supprimées.
+            </p>
+            <div class="d-flex align-items-end gap-4">
+              <gbt-input
+                label="Conserver les N dernières (vide = désactivé)"
+                [ngModel]="retentionKeepLastN()"
+                (ngModelChange)="setRetentionKeepLastN($event)"
+                [errorMessage]="retentionError()"
+              />
+              <gbt-button class="mb-3" text="Enregistrer" [loading]="savingRetention()" (clicked)="saveRetentionPolicy()" loadingLabel="Chargement en cours" />
+            </div>
+            @if (retentionSaved()) {
+              <p class="repository-detail__quota-success">Politique de rétention enregistrée.</p>
+            }
+          </gbt-card>
+
+          <gbt-card class="repository-detail__danger" heading="Zone de danger" icon="triangle-alert">
+            <p>La suppression d'un dépôt est définitive et efface tous les packages qu'il contient.</p>
+            <gbt-button text="Supprimer le dépôt" variant="danger" [loading]="deletingRepository()" (clicked)="deleteRepository()" loadingLabel="Chargement en cours" />
+            @if (deleteRepositoryError(); as message) {
+              <p class="gbt-form-error" role="alert">{{ message }}</p>
+            }
+          </gbt-card>
+        </gbt-tab>
+      }
+    </gbt-tabs>
+  </div>
+}

@@ -1,0 +1,40 @@
+<div class="container">
+  @if (loading()) {
+    <p>Chargement…</p>
+  } @else {
+    @if (summary().length > 0) {
+      <gbt-card heading="Résumé" icon="shield">
+        <gbt-dimension-card
+          [rows]="summaryChartData()"
+          caption="Événements par type"
+          labelColumn="Type"
+          valueColumn="Événements"
+          emptyMessage="Aucun événement."
+          [locale]="locale"
+        />
+      </gbt-card>
+    }
+
+    @if (blockedAccounts().length > 0) {
+      <gbt-card heading="Comptes actuellement bloqués" icon="lock">
+        <ul>
+          @for (account of blockedAccountRows(); track account.username) {
+            <li>{{ account.username }} — débloqué dans {{ account.remaining }}</li>
+          }
+        </ul>
+      </gbt-card>
+    }
+
+    <div class="d-flex justify-content-end mb-3">
+      <gbt-button text="Télécharger en CSV" [disabled]="rows().length === 0" (clicked)="downloadCsv()" />
+    </div>
+
+    <gbt-table
+      caption="Journal de sécurité"
+      emptyMessage="Aucune donnée disponible"
+      [data]="rows()"
+      [columns]="columns"
+      [trackBy]="rowId"
+    />
+  }
+</div>

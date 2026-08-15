@@ -1,0 +1,27 @@
+<main class="auth-layout">
+  <div class="auth-layout__card">
+    <h1 class="sr-only">Créer un compte Hangar</h1>
+    <img src="/api/branding/logo" alt="Hangar logo" class="auth-layout__logo" />
+    @if (!mfaToken()) {
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <p class="gbt-form-required-note">Les champs marqués d'un astérisque (*) sont obligatoires.</p>
+        <gbt-input label="Nom d'utilisateur" formControlName="username" [required]="true" autocomplete="username" />
+        <gbt-input label="Adresse e-mail" type="email" formControlName="email" [required]="true" autocomplete="email" />
+        <gbt-input label="Mot de passe" type="password" formControlName="password" [required]="true" autocomplete="new-password" showPasswordLabel="Afficher le mot de passe" hidePasswordLabel="Masquer le mot de passe" />
+        @if (errorMessage(); as message) {
+          <p class="gbt-form-error" role="alert">{{ message }}</p>
+        }
+        <gbt-button
+          text="Créer mon compte"
+          type="submit"
+          [loading]="submitting()"
+          loadingLabel="Chargement en cours"
+          [disabled]="form.invalid || submitting()"
+        />
+      </form>
+      <a routerLink="/login" class="auth-layout__link">J'ai déjà un compte</a>
+    } @else {
+      <app-mfa-enrollment [mfaToken]="mfaToken()!" (completed)="onEnrollmentCompleted()" />
+    }
+  </div>
+</main>

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO docker_manifests (id, package_repository_id, image_name, digest, media_type, body, created_at) VALUES ($1, $2, 'myimage', $3, 'application/vnd.docker.distribution.manifest.v2+json', '{}', now())",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e001d258bef318071afb0edf2ff383da66e34041d5aba62baab7e65241f00aa4"
+}

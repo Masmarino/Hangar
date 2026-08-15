@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT group_repository_id, member_repository_id FROM package_repository_group_members WHERE group_repository_id = ANY($1) ORDER BY group_repository_id, position",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "group_repository_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "member_repository_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "997e28286f249420dfdfcb564a312e0dfe67c1502a451e564dbd05e121e6fd35"
+}

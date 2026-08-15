@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO npm_download_counters (npm_package_version_id, count) VALUES ($1, 0)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e20aa07d7c52d5a20d1ab2f9b64f7e7b61abd8ae3d0fc5edb94983e6449669a9"
+}

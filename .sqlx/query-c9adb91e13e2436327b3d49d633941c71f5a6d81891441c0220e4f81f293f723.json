@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT logo_bytes, logo_content_type, favicon_bytes, favicon_content_type FROM branding_settings WHERE organization_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "logo_bytes",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 1,
+        "name": "logo_content_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "favicon_bytes",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 3,
+        "name": "favicon_content_type",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "c9adb91e13e2436327b3d49d633941c71f5a6d81891441c0220e4f81f293f723"
+}

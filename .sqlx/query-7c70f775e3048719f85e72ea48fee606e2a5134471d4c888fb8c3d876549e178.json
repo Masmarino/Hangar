@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO docker_manifests (id, package_repository_id, image_name, digest, media_type, body, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (package_repository_id, image_name, digest) DO NOTHING RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Bytea",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7c70f775e3048719f85e72ea48fee606e2a5134471d4c888fb8c3d876549e178"
+}

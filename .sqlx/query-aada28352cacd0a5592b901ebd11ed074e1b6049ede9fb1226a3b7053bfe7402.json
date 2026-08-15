@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT repository_id, SUM(db.size_bytes)::BIGINT AS total_bytes FROM ( SELECT DISTINCT dm.package_repository_id AS repository_id, dmb.blob_digest FROM docker_manifests dm JOIN docker_manifest_blobs dmb ON dmb.manifest_id = dm.id WHERE dm.package_repository_id = ANY($1) ) distinct_blobs JOIN docker_blobs db ON db.digest = distinct_blobs.blob_digest GROUP BY repository_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "repository_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "total_bytes",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "aada28352cacd0a5592b901ebd11ed074e1b6049ede9fb1226a3b7053bfe7402"
+}

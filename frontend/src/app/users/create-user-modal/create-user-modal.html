@@ -1,0 +1,13 @@
+<gbt-modal [isOpen]="true" heading="Nouvel utilisateur" closeLabel="Fermer" (closed)="cancelled.emit()">
+  <form class="stack" [formGroup]="form" (ngSubmit)="submit()">
+    <p class="gbt-form-required-note">Les champs marqués d'un astérisque (*) sont obligatoires.</p>
+    <gbt-input label="Nom d'utilisateur" formControlName="username" [required]="true" />
+    <gbt-input label="Adresse e-mail" formControlName="email" [required]="true" />
+    <p>
+      Un e-mail sera envoyé à cette adresse pour que l'utilisateur active son compte et choisisse
+      son mot de passe, sous 24 heures.
+    </p>
+    <gbt-checkbox label="Super-administrateur" formControlName="isSuperAdmin" />
+    <gbt-button text="Inviter" type="submit" [disabled]="form.invalid" [loading]="creating()" loadingLabel="Chargement en cours" />
+  </form>
+</gbt-modal>

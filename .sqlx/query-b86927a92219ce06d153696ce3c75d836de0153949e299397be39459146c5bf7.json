@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT user_id, encrypted_secret, secret_nonce, confirmed, last_used_step, created_at FROM totp_credentials WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "encrypted_secret",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 2,
+        "name": "secret_nonce",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 3,
+        "name": "confirmed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "last_used_step",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "b86927a92219ce06d153696ce3c75d836de0153949e299397be39459146c5bf7"
+}

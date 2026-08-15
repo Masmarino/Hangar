@@ -1,0 +1,37 @@
+<div class="form-container">
+  <gbt-card heading="Paramètres système" icon="settings">
+    @if (loading()) {
+      <p>Chargement…</p>
+    } @else {
+      @for (field of fields; track field.key) {
+        <gbt-input
+          [label]="field.label"
+          [ngModel]="value(field.key)"
+          (ngModelChange)="setValue(field.key, $event)"
+          [errorMessage]="fieldError(field)"
+        />
+      }
+
+      <gbt-checkbox
+        label="Autoriser la création de compte"
+        [ngModel]="registrationEnabled()"
+        (ngModelChange)="registrationEnabled.set($event)"
+      />
+
+      @if (errorMessage(); as message) {
+        <p class="gbt-form-error" role="alert">{{ message }}</p>
+      }
+      @if (saved()) {
+        <p class="gbt-form-success" role="status">Paramètres enregistrés.</p>
+      }
+
+      <gbt-button
+        text="Enregistrer"
+        [loading]="saving()"
+        loadingLabel="Chargement en cours"
+        [disabled]="hasErrors()"
+        (clicked)="save()"
+      />
+    }
+  </gbt-card>
+</div>

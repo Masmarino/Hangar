@@ -1,0 +1,87 @@
+<gbt-modal [isOpen]="true" heading="Nouveau dépôt" closeLabel="Fermer" (closed)="cancelled.emit()">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <p class="gbt-form-required-note">Les champs marqués d'un astérisque (*) sont obligatoires.</p>
+    <gbt-input label="Nom" formControlName="name" [required]="true" />
+    <gbt-select label="Format" placeholder="Sélectionner…" [options]="formatOptions" formControlName="format" />
+    <gbt-select label="Type" placeholder="Sélectionner…" [options]="repoTypeOptions" formControlName="repoType" />
+
+    @if (isProxy()) {
+      <gbt-input label="URL distante" formControlName="remoteUrl" [required]="true" />
+      <gbt-input label="Nom d'utilisateur distant (optionnel)" formControlName="remoteUsername" />
+      <gbt-input
+        label="Mot de passe / token distant (optionnel)"
+        type="password"
+        showPasswordLabel="Afficher le mot de passe"
+        hidePasswordLabel="Masquer le mot de passe"
+        formControlName="remotePassword"
+        placeholder="Laisser le nom d'utilisateur vide pour une authentification par token"
+      />
+    }
+
+    @if (isGroup()) {
+      <div class="create-repository-modal__members">
+        @if (availableMemberOptions().length === 0) {
+          <p class="create-repository-modal__hint">
+            Aucun dépôt {{ form.controls.format.value }} disponible à ajouter pour l'instant.
+          </p>
+        } @else {
+          <div class="d-flex align-items-end gap-4">
+            <gbt-select
+              label="Ajouter un dépôt membre"
+              placeholder="Sélectionner…"
+              [options]="availableMemberOptions()"
+              [ngModel]="selectedMemberId()"
+              (ngModelChange)="selectedMemberId.set($event)"
+              [ngModelOptions]="{ standalone: true }"
+            />
+            <gbt-button class="mb-3" type="button" text="Ajouter" [disabled]="!selectedMemberId()" (clicked)="addMember()" />
+          </div>
+        }
+        @if (groupMembers().length > 0) {
+          <p class="create-repository-modal__hint">
+            Ordre de résolution (le premier dépôt qui contient le paquet demandé répond) :
+          </p>
+          <ol class="create-repository-modal__member-list">
+            @for (member of groupMembers(); track member.id; let i = $index) {
+              <li>
+                <span>{{ member.name }}</span>
+                <div class="create-repository-modal__member-actions">
+                  <button
+                    type="button"
+                    aria-label="Monter"
+                    [disabled]="i === 0"
+                    (click)="moveMemberUp(i)"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Descendre"
+                    [disabled]="i === groupMembers().length - 1"
+                    (click)="moveMemberDown(i)"
+                  >
+                    ↓
+                  </button>
+                  <button type="button" aria-label="Retirer" (click)="removeMember(member.id)">×</button>
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+    }
+
+    <gbt-input
+      label="Quota (Mo, vide = illimité)"
+      formControlName="quotaMb"
+      [errorMessage]="quotaError"
+    />
+    <gbt-input
+      label="Conserver les N dernières versions/étiquettes (vide = désactivé)"
+      formControlName="retentionKeepLastN"
+      [errorMessage]="retentionError"
+    />
+
+    <gbt-button text="Créer" type="submit" [disabled]="hasErrors" [loading]="creating()" loadingLabel="Chargement en cours" />
+  </form>
+</gbt-modal>

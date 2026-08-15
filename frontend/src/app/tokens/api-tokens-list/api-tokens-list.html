@@ -1,0 +1,34 @@
+<p>
+  Utilisez un token pour authentifier <code>npm publish</code>/<code>npm install</code> dans votre
+  <code>.npmrc</code>.
+</p>
+
+<gbt-button text="Nouveau token" (clicked)="showCreateForm.set(true)" />
+<gbt-table
+  caption="Jetons API"
+  emptyMessage="Aucune donnée disponible"
+  [clickableRows]="true"
+  [data]="tokens()"
+  [columns]="columns"
+  [trackBy]="rowId"
+  (rowClick)="revokeToken($event)"
+/>
+@if (revokeError(); as message) {
+  <p class="gbt-form-error" role="alert">{{ message }}</p>
+}
+
+@if (showCreateForm()) {
+  <gbt-modal [isOpen]="true" heading="Nouveau token API" closeLabel="Fermer" (closed)="showCreateForm.set(false)">
+    <p class="gbt-form-required-note">Les champs marqués d'un astérisque (*) sont obligatoires.</p>
+    <gbt-input label="Nom (ex. « mon laptop »)" [formControl]="newLabel" [required]="true" />
+    <gbt-button text="Créer" (clicked)="createToken()" [disabled]="newLabel.invalid" [loading]="creatingToken()" loadingLabel="Chargement en cours" />
+  </gbt-modal>
+}
+
+@if (createdToken(); as token) {
+  <gbt-modal [isOpen]="true" heading="Token créé" closeLabel="Fermer" (closed)="dismissCreatedToken()">
+    <p>Copiez ce token maintenant — il ne sera plus jamais affiché.</p>
+    <pre>{{ token }}</pre>
+    <gbt-button text="J'ai copié le token" (clicked)="dismissCreatedToken()" />
+  </gbt-modal>
+}

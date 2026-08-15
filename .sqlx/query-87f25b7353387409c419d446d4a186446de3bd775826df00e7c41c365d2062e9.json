@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO package_repository_projections (id, organization_id, name, format, repo_type, version, created_at, updated_at) VALUES ($1, $2, $3, 'npm', 'hosted', 1, now(), now())",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "87f25b7353387409c419d446d4a186446de3bd775826df00e7c41c365d2062e9"
+}

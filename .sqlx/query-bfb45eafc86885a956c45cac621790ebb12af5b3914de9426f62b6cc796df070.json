@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO branding_settings (organization_id, logo_bytes, logo_content_type) VALUES ($1, $2, $3) ON CONFLICT (organization_id) DO UPDATE SET logo_bytes = EXCLUDED.logo_bytes, logo_content_type = EXCLUDED.logo_content_type",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bytea",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bfb45eafc86885a956c45cac621790ebb12af5b3914de9426f62b6cc796df070"
+}

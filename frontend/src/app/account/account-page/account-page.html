@@ -1,0 +1,78 @@
+<div class="container">
+  <gbt-tabs>
+    <gbt-tab label="Profil">
+      <div class="stack">
+        <gbt-card heading="Informations" icon="user">
+          <div class="stack">
+            <p>Nom d'utilisateur : {{ me.username() }}</p>
+            @if (me.isSuperAdmin()) {
+              <p>Statut : Super-administrateur</p>
+            }
+            <p>Membre depuis : {{ me.createdAt() | date: 'medium' }}</p>
+          </div>
+        </gbt-card>
+
+        <gbt-card heading="Changer le mot de passe" icon="lock">
+          <form class="stack" [formGroup]="form" (ngSubmit)="submit()">
+            <p class="gbt-form-required-note">Les champs marqués d'un astérisque (*) sont obligatoires.</p>
+            <gbt-input
+              label="Mot de passe actuel"
+              type="password"
+              showPasswordLabel="Afficher le mot de passe"
+              hidePasswordLabel="Masquer le mot de passe"
+              formControlName="currentPassword"
+              [required]="true"
+              autocomplete="current-password"
+            />
+            <gbt-input
+              label="Nouveau mot de passe"
+              type="password"
+              showPasswordLabel="Afficher le mot de passe"
+              hidePasswordLabel="Masquer le mot de passe"
+              formControlName="newPassword"
+              [required]="true"
+              autocomplete="new-password"
+              [errorMessage]="newPasswordError"
+            />
+            <gbt-input
+              label="Confirmer le nouveau mot de passe"
+              type="password"
+              showPasswordLabel="Afficher le mot de passe"
+              hidePasswordLabel="Masquer le mot de passe"
+              formControlName="confirmPassword"
+              [required]="true"
+              autocomplete="new-password"
+              [errorMessage]="confirmPasswordError"
+            />
+            @if (errorMessage(); as message) {
+              <p class="gbt-form-error" role="alert">{{ message }}</p>
+            }
+            @if (successMessage(); as message) {
+              <p class="gbt-form-success" role="status">{{ message }}</p>
+            }
+            <gbt-button
+              text="Changer le mot de passe"
+              type="submit"
+              [loading]="submitting()"
+              loadingLabel="Chargement en cours"
+              [disabled]="form.invalid || submitting()"
+            />
+          </form>
+        </gbt-card>
+      </div>
+    </gbt-tab>
+
+    <gbt-tab label="Sécurité">
+      <div class="stack">
+        <app-mfa-settings />
+        <app-passkey-settings />
+      </div>
+    </gbt-tab>
+
+    <gbt-tab label="Jetons API">
+      <gbt-card heading="Tokens API" icon="key">
+        <app-api-tokens-list />
+      </gbt-card>
+    </gbt-tab>
+  </gbt-tabs>
+</div>

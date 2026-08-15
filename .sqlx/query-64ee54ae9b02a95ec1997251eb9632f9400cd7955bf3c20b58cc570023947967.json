@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT version FROM domain_events WHERE aggregate_type = 'DockerRegistry' AND aggregate_id = $1 ORDER BY version DESC LIMIT 1 FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "version",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "64ee54ae9b02a95ec1997251eb9632f9400cd7955bf3c20b58cc570023947967"
+}

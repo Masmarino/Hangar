@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO branding_settings (organization_id, logo_bytes, logo_content_type) VALUES ($1, NULL, NULL) ON CONFLICT (organization_id) DO UPDATE SET logo_bytes = NULL, logo_content_type = NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "18a9fdf4198c678af9c13d32961f1631d6e23d58420ac1c26ff69e5cb25097fe"
+}

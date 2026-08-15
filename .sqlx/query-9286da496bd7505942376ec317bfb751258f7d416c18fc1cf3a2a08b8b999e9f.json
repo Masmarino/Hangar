@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE npm_download_counters SET count = count + 1, last_downloaded_at = now() WHERE npm_package_version_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9286da496bd7505942376ec317bfb751258f7d416c18fc1cf3a2a08b8b999e9f"
+}

@@ -1,0 +1,58 @@
+<div class="container">
+  <gbt-card heading="Configuration" icon="download">
+    <p>
+      Exporte les dépôts, utilisateurs, permissions et paramètres système dans un
+      fichier JSON téléchargeable — utile pour un audit ou une sauvegarde de la
+      configuration. Ne contient ni mot de passe, ni jeton API, ni les paquets/images
+      eux-mêmes.
+    </p>
+    <gbt-button
+      text="Télécharger la configuration (JSON)"
+      [loading]="downloading()"
+      loadingLabel="Chargement en cours"
+      (clicked)="downloadConfiguration()"
+    />
+    @if (error(); as message) {
+      <p class="gbt-form-error" role="alert">{{ message }}</p>
+    }
+  </gbt-card>
+
+  <gbt-card heading="Restaurer une configuration" icon="upload">
+    <p>
+      Importe utilisateurs, dépôts, permissions et paramètres système depuis un fichier JSON
+      exporté précédemment. Ne fonctionne que sur une instance fraîchement provisionnée, sans
+      dépôt ni autre utilisateur que vous — les paquets/images ne sont pas restaurés.
+    </p>
+    <input
+      type="file"
+      accept=".json"
+      aria-label="Choisir un fichier de configuration JSON"
+      (change)="onFileSelected($event)"
+    />
+    <gbt-button
+      text="Importer"
+      [loading]="importing()"
+      loadingLabel="Chargement en cours"
+      [disabled]="!selectedFile()"
+      (clicked)="importConfiguration()"
+    />
+    @if (importError(); as message) {
+      <p class="gbt-form-error" role="alert">{{ message }}</p>
+    }
+    @if (importReport(); as report) {
+      <p>
+        {{ report.users_created }} utilisateur(s), {{ report.repositories_created }} dépôt(s),
+        {{ report.permissions_granted }} permission(s) restaurés.
+      </p>
+      @if (report.invited.length > 0) {
+        <p>Invités : {{ report.invited.join(', ') }}</p>
+      }
+      @if (report.skipped_no_email.length > 0) {
+        <p>Sans email, non invités : {{ report.skipped_no_email.join(', ') }}</p>
+      }
+      @if (report.failed.length > 0) {
+        <p class="gbt-form-error" role="alert">Échecs : {{ report.failed.join(' · ') }}</p>
+      }
+    }
+  </gbt-card>
+</div>

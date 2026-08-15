@@ -1,0 +1,37 @@
+[package]
+name = "hangar-infrastructure"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+hangar-domain = { path = "../hangar-domain" }
+hangar-application = { path = "../hangar-application" }
+async-trait = "0.1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "migrate", "macros", "json"] }
+argon2 = "0.5"
+jsonwebtoken = "9"
+tokio = { version = "1", features = ["fs", "rt", "process"] }
+reqwest = { version = "0.13.4", features = ["json", "query", "stream"] }
+libc = "0.2"
+sha2 = "0.11.0"
+rand = "0.10.2"
+aes-gcm = "0.11.1"
+hex = "0.4.3"
+lettre = { version = "0.11.23", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder"] }
+tracing = "0.1"
+ldap3 = { version = "0.12", default-features = false, features = ["tls-rustls-ring"] }
+openidconnect = "4"
+bytes = "1"
+futures-core = "0.3"
+futures-util = "0.3"
+tokio-util = { version = "0.7", features = ["io"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tempfile = "3"
+wiremock = "0.6"

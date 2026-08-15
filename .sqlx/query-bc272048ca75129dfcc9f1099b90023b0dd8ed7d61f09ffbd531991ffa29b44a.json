@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT package_repository_id, image_name FROM docker_tags WHERE package_repository_id = ANY($1) ORDER BY package_repository_id, image_name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "package_repository_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "image_name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "bc272048ca75129dfcc9f1099b90023b0dd8ed7d61f09ffbd531991ffa29b44a"
+}

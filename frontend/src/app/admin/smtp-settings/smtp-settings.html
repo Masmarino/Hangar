@@ -1,0 +1,89 @@
+<div class="form-container">
+  <gbt-card heading="Serveur mail (SMTP)" icon="mail">
+    @if (loading()) {
+      <p>Chargement…</p>
+    } @else {
+      <gbt-input
+        label="Hôte SMTP"
+        [ngModel]="host()"
+        (ngModelChange)="host.set($event)"
+        [errorMessage]="hostError()"
+      />
+      <gbt-input
+        label="Port"
+        [ngModel]="port()"
+        (ngModelChange)="port.set($event)"
+        [errorMessage]="portError()"
+      />
+      <gbt-input
+        label="Identifiant"
+        [ngModel]="username()"
+        (ngModelChange)="username.set($event)"
+        [errorMessage]="usernameError()"
+      />
+      <gbt-input
+        label="Mot de passe"
+        type="password"
+        showPasswordLabel="Afficher le mot de passe"
+        hidePasswordLabel="Masquer le mot de passe"
+        [ngModel]="password()"
+        (ngModelChange)="password.set($event)"
+        [errorMessage]="passwordError()"
+        [placeholder]="passwordSet() ? 'Laisser vide pour conserver le mot de passe actuel' : ''"
+      />
+      <gbt-input
+        label="Nom d'expéditeur"
+        [ngModel]="fromName()"
+        (ngModelChange)="fromName.set($event)"
+        [errorMessage]="fromNameError()"
+        placeholder="Hangar"
+      />
+      <gbt-input
+        label="Adresse d'expédition"
+        [ngModel]="fromAddress()"
+        (ngModelChange)="fromAddress.set($event)"
+        [errorMessage]="fromAddressError()"
+      />
+      <gbt-select
+        label="Sécurité"
+        placeholder="Sélectionner…"
+        [options]="securityOptions"
+        [ngModel]="security()"
+        (ngModelChange)="security.set($event)"
+      />
+
+      @if (errorMessage(); as message) {
+        <p class="gbt-form-error" role="alert">{{ message }}</p>
+      }
+      @if (saved()) {
+        <p class="gbt-form-success" role="status">Paramètres enregistrés.</p>
+      }
+
+      <gbt-button text="Enregistrer" [loading]="saving()" [disabled]="hasErrors()" (clicked)="save()" loadingLabel="Chargement en cours" />
+    }
+  </gbt-card>
+
+  @if (!loading()) {
+    <gbt-card heading="Envoyer un e-mail de test" icon="send">
+      <gbt-input
+        label="Destinataire"
+        [ngModel]="testRecipient()"
+        (ngModelChange)="testRecipient.set($event)"
+      />
+      @if (testErrorMessage(); as message) {
+        <p class="gbt-form-error" role="alert">{{ message }}</p>
+      }
+      @if (testSent()) {
+        <p class="gbt-form-success" role="status">E-mail de test envoyé.</p>
+      }
+      <gbt-button
+        text="Envoyer"
+        variant="secondary"
+        [loading]="sendingTest()"
+        loadingLabel="Chargement en cours"
+        [disabled]="testRecipient().trim() === ''"
+        (clicked)="sendTest()"
+      />
+    </gbt-card>
+  }
+</div>

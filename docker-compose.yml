@@ -1,0 +1,84 @@
+# docker-compose.yml
+services:
+  postgres:
+    image: postgres:18-alpine3.24
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hangar
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: hangar
+    volumes:
+      # postgres:18+ images manage their own version-specific subdirectory
+      # under a single top-level mount — mounting at the old .../data path
+      # instead makes the entrypoint refuse to start (it can no longer tell
+      # whether that path holds real data from a pre-18 image or is just an
+      # empty legacy mount). See https://github.com/docker-library/postgres/pull/1259.
+      - hangar-postgres-data:/var/lib/postgresql
+    ports:
+      # Bound to loopback only — exposed so a locally-run backend (`cargo run`,
+      # e.g. via scripts/dev.sh for frontend hot-reload) can connect from the
+      # host. hangar-api itself reaches this container over the compose
+      # network and doesn't need it. Never publish this on all interfaces:
+      # Postgres has no other network-level access control of its own here.
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hangar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  hangar-api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # A Docker blob push/pull or npm tarball currently gets buffered fully in
+    # memory (up to the 2 GiB / 200 MiB body limits below), so a few large,
+    # concurrent transfers could otherwise exhaust the whole host. This caps
+    # the blast radius to this container — raise it if legitimate concurrent
+    # large-file traffic gets OOM-killed.
+    deploy:
+      resources:
+        limits:
+          memory: ${HANGAR_API_MEMORY_LIMIT:-4g}
+    environment:
+      DATABASE_URL: postgres://hangar:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/hangar
+      # Defaults to 10 (see hangar-infrastructure::postgres::DEFAULT_DB_MAX_CONNECTIONS).
+      # Size against expected concurrent users, not left as a guess — each held connection
+      # is one in-flight request that would otherwise queue on `acquire_timeout` (10s).
+      DB_MAX_CONNECTIONS: ${DB_MAX_CONNECTIONS:-10}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      # Optional: encrypts secrets at rest (SMTP/LDAP/OIDC/proxy-repository credentials,
+      # TOTP seeds) with their own key instead of falling back to JWT_SECRET — see
+      # .env.example. Strongly recommended for a real deployment.
+      SECRETS_ENCRYPTION_KEY: ${SECRETS_ENCRYPTION_KEY:-}
+      HANGAR_BASE_DOMAIN: ${HANGAR_BASE_DOMAIN:?HANGAR_BASE_DOMAIN must be set}
+      STORAGE_ROOT: /data
+      BIND_ADDR: 0.0.0.0:8080
+      # tracing_subscriber::fmt::init() honours RUST_LOG; without it the
+      # container logs essentially nothing.
+      RUST_LOG: ${RUST_LOG:-info}
+      # Optional: only creates an account when the users table is empty — safe to
+      # leave set across restarts. Without these, there is no way to create the
+      # first admin account through the running application.
+      HANGAR_BOOTSTRAP_ADMIN_USERNAME: ${HANGAR_BOOTSTRAP_ADMIN_USERNAME:-}
+      HANGAR_BOOTSTRAP_ADMIN_PASSWORD: ${HANGAR_BOOTSTRAP_ADMIN_PASSWORD:-}
+      # Without this, the Docker CLI's WWW-Authenticate challenge falls back
+      # to Config::from_env's default (http://0.0.0.0:8080/v2/token), which
+      # a client machine can never resolve — `docker login`/`push`/`pull`
+      # against this deployment fail outright. See .env.example.
+      HANGAR_DOCKER_TOKEN_REALM: ${HANGAR_DOCKER_TOKEN_REALM:-}
+    ports:
+      - "8080:8080"
+    volumes:
+      # The image runs as a non-root user. Docker only sets that user's
+      # ownership on this volume the first time it's created (empty). If
+      # you're upgrading from an image that ran as root and hangar-api
+      # can't write to /data after upgrading, fix ownership once with:
+      #   docker compose run --rm --user root hangar-api chown -R hangar:hangar /data
+      - hangar-storage:/data
+
+volumes:
+  hangar-postgres-data:
+  hangar-storage:

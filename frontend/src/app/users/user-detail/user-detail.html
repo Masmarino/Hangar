@@ -1,0 +1,101 @@
+<div class="container">
+  @if (loadError()) {
+    <gbt-card>
+      <p class="gbt-form-error" role="alert">Échec du chargement de l'utilisateur.</p>
+    </gbt-card>
+  } @else {
+    @if (user(); as u) {
+      <gbt-card>
+        <div class="stack">
+          <h2>Informations</h2>
+          <p>E-mail : {{ u.email ?? '—' }}</p>
+          @if (u.invitation_pending) {
+            <p>Statut : invitation en attente d'activation</p>
+            @if (canManageTarget()) {
+              <gbt-button text="Renvoyer l'invitation" [loading]="resendingInvitation()" (clicked)="resendInvitation()" loadingLabel="Chargement en cours" />
+              @if (invitationResent()) {
+                <p>Invitation renvoyée.</p>
+              }
+              @if (resendInvitationError(); as message) {
+                <p class="gbt-form-error" role="alert">{{ message }}</p>
+              }
+            }
+          }
+        </div>
+      </gbt-card>
+    }
+
+    <gbt-card>
+      <div class="stack">
+        <h2>Droits d'accès</h2>
+        <gbt-table
+          caption="Droits d'accès de cet utilisateur"
+          emptyMessage="Aucune donnée disponible"
+          [clickableRows]="true"
+          [data]="permissions()"
+          [columns]="permissionColumns"
+          [trackBy]="permissionRowId"
+          (rowClick)="openRoleEditor($event)"
+        />
+        <div class="stack">
+          <gbt-select
+            label="Dépôts"
+            placeholder="Choisir un ou plusieurs dépôts"
+            [multiple]="true"
+            [selectedCountLabel]="selectedCountLabel"
+            [options]="repositoryOptions()"
+            [ngModel]="grantRepositoryIds()"
+            (ngModelChange)="grantRepositoryIds.set($event)"
+          />
+          <gbt-select
+            label="Rôle"
+            placeholder="Sélectionner…"
+            [options]="roleOptions"
+            [ngModel]="grantRole()"
+            (ngModelChange)="grantRole.set($event)"
+          />
+          <gbt-button
+            [text]="grantRepositoryIds().length > 1 ? 'Accorder (' + grantRepositoryIds().length + ')' : 'Accorder'"
+            (clicked)="grantPermission()"
+          />
+          @if (grantError(); as message) {
+            <p class="gbt-form-error" role="alert">{{ message }}</p>
+          }
+        </div>
+      </div>
+    </gbt-card>
+
+    @if (editingPermission(); as entry) {
+      <app-permission-role-editor
+        [isOpen]="true"
+        [label]="entry.repository_name"
+        [currentRole]="entry.role"
+        [subjectKind]="'repository'"
+        [saving]="savingRole()"
+        (roleChanged)="changeRole($event)"
+        (revoked)="revokeFromEditor()"
+        (closed)="closeRoleEditor()"
+      />
+    }
+
+    <div class="d-flex justify-content-end gap-4">
+      @if (isSuperAdminViewer()) {
+        <gbt-button
+          [text]="user()?.is_super_admin ? 'Rétrograder' : 'Promouvoir super-administrateur'"
+          [loading]="settingSuperAdmin()"
+          loadingLabel="Chargement en cours"
+          (clicked)="setSuperAdmin()"
+        />
+        @if (superAdminError(); as message) {
+          <p class="gbt-form-error" role="alert">{{ message }}</p>
+        }
+      }
+      @if (canManageTarget()) {
+        <gbt-button text="Supprimer l'utilisateur" variant="danger" (clicked)="deleteUser()" />
+        @if (deleteUserError(); as message) {
+          <p class="gbt-form-error" role="alert">{{ message }}</p>
+        }
+      }
+    </div>
+  }
+</div>

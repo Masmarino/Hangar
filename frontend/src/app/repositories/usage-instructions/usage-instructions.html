@@ -1,0 +1,28 @@
+<section>
+  @if (repository().format === 'docker') {
+    <p>Connexion :</p>
+    <pre>
+echo &lt;votre-token&gt; | docker login {{
+        host
+      }} -u &lt;votre-nom-utilisateur&gt; --password-stdin</pre>
+    @if (isHosted()) {
+      <p>Marquage et publication de l'image :</p>
+      <pre>
+docker tag mon-image:latest {{ host }}/{{ repository().name }}/mon-image:latest
+docker push {{ host }}/{{ repository().name }}/mon-image:latest</pre>
+    }
+    <p>Récupération d'une image :</p>
+    <pre>docker pull {{ host }}/{{ repository().name }}/&lt;image&gt;:&lt;tag&gt;</pre>
+  } @else {
+    <p>Ajoutez ces lignes à votre <code>.npmrc</code> :</p>
+    <pre>
+registry={{ origin }}/npm/{{ repository().name }}/
+//{{ host }}/npm/{{ repository().name }}/:_authToken=&lt;votre-token&gt;</pre>
+    @if (isHosted()) {
+      <pre>npm publish</pre>
+    }
+    <pre>npm install</pre>
+  }
+
+  <p><a routerLink="/account">Créer un token API</a></p>
+</section>

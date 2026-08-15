@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, npm_package_id, version, manifest, shasum, integrity, tarball_storage_key, tarball_size_bytes, deprecated, deprecated_message, published_by, published_at, origin FROM npm_package_versions WHERE npm_package_id = $1 AND version = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "npm_package_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "version",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "manifest",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 4,
+        "name": "shasum",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "integrity",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "tarball_storage_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "tarball_size_bytes",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "deprecated",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "deprecated_message",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "published_by",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 11,
+        "name": "published_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "origin",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "e8a7b2031fc2453e5fa00e8f2e487b03f5e7ba42626b2ec018cef2764641f0fd"
+}

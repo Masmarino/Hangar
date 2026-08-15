@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO docker_manifest_blobs (manifest_id, blob_digest) SELECT $1, * FROM UNNEST($2::text[])",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "be1aab11da8ebfa2bd44b6903a0ac03ceb354297bcbf46a41210e0208587a402"
+}

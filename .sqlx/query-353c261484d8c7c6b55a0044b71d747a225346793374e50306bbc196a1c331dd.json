@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO users (id, username, password_hash, is_super_admin, is_organization_admin, organization_id, created_at) VALUES ($1, $2, 'irrelevant', false, true, $3, now())",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "353c261484d8c7c6b55a0044b71d747a225346793374e50306bbc196a1c331dd"
+}

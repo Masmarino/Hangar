@@ -1,0 +1,26 @@
+[package]
+name = "hangar-npm"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+hangar-domain = { path = "../hangar-domain" }
+hangar-application = { path = "../hangar-application" }
+hangar-infrastructure = { path = "../hangar-infrastructure" }
+axum = "0.7"
+bytes = "1"
+axum-extra = { version = "0.9", features = ["typed-header"] }
+async-trait = "0.1"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tower-http = { version = "0.5", features = ["decompression-gzip"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+base64 = "0.23.1"
+
+[dev-dependencies]
+tower = { version = "0.4", features = ["util"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "migrate"] }
+tempfile = "3"

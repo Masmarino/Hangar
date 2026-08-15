@@ -1,0 +1,13 @@
+gbt-card {
+  display: block;
+  margin-bottom: 1.5rem;
+}
+
+hg-gauge-bar {
+  display: block;
+  margin-bottom: 1rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}

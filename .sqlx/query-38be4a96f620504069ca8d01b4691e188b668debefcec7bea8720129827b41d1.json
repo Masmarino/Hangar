@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT staging_path, bytes_received FROM docker_blob_uploads WHERE id = $1 FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "staging_path",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "bytes_received",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "38be4a96f620504069ca8d01b4691e188b668debefcec7bea8720129827b41d1"
+}

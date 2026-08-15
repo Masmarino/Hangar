@@ -1,0 +1,14 @@
+{
+  "/api": {
+    "target": "http://localhost:8081",
+    "secure": false
+  },
+  "/npm": {
+    "target": "http://localhost:8081",
+    "secure": false
+  },
+  "/v2": {
+    "target": "http://localhost:8081",
+    "secure": false
+  }
+}

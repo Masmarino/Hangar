@@ -1,0 +1,40 @@
+pub mod admin;
+pub mod branding;
+pub mod api_token;
+pub mod npm_download;
+pub mod npm_metadata;
+pub mod npm_publish;
+pub mod npm_unpublish;
+pub mod npm_deprecate;
+pub mod npm_dist_tags;
+pub mod npm_search;
+pub mod list_repository_packages;
+pub mod npm_audit;
+pub mod npm_dependency_scan;
+pub mod package_details;
+pub mod package_repository;
+pub mod permission;
+pub mod user;
+pub mod docker_upload;
+pub mod docker_manifest_put;
+pub mod docker_manifest_get;
+pub mod docker_blob_get;
+pub mod docker_manifest_delete;
+pub mod docker_scan;
+pub mod docker_manifest_cache;
+pub mod docker_list;
+pub mod docker_access_token;
+pub mod invitation;
+pub mod mfa;
+pub mod retention;
+pub mod webauthn;
+pub mod smtp;
+pub mod group_resolve;
+pub mod organization;
+pub mod registration;
+pub mod sso;
+
+#[cfg(test)]
+pub mod npm_test_support;
+#[cfg(test)]
+pub mod docker_test_support;

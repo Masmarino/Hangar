@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT m.digest FROM docker_manifests m JOIN docker_tags t ON t.manifest_id = m.id WHERE t.package_repository_id = $1 AND t.image_name = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "digest",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b1825d0c10bf8e5e0ac0918bea6d9699a4a6d86d226f0963fb52d292f7d73bd2"
+}

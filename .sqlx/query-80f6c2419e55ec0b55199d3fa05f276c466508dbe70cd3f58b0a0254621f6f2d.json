@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM docker_manifests WHERE package_repository_id = $1 AND image_name = $2 AND digest = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "80f6c2419e55ec0b55199d3fa05f276c466508dbe70cd3f58b0a0254621f6f2d"
+}

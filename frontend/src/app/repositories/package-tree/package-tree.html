@@ -1,0 +1,41 @@
+@if (loading()) {
+  <p>Chargement…</p>
+} @else if (error(); as message) {
+  <p class="gbt-form-error" role="alert">{{ message }}</p>
+} @else if (tree(); as t) {
+  @if (t.format === 'npm') {
+    @if (t.packages.length === 0) {
+      <p>Aucun package publié.</p>
+    } @else {
+      <ul class="package-tree">
+        @for (row of npmRows(); track row.pkg.name) {
+          <li>
+            <a class="package-tree__node" [routerLink]="row.link">
+              <gbt-icon name="package" aria-hidden="true" />
+              <span class="package-tree__label">{{ row.pkg.name }}</span>
+              <span class="package-tree__count">{{ row.pkg.versions.length }}</span>
+              <gbt-icon name="chevron-down" class="package-tree__chevron" aria-hidden="true" />
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    @if (t.images.length === 0) {
+      <p>Aucune image publiée.</p>
+    } @else {
+      <ul class="package-tree">
+        @for (row of dockerRows(); track row.image.image_name) {
+          <li>
+            <a class="package-tree__node" [routerLink]="row.link">
+              <gbt-icon name="package" aria-hidden="true" />
+              <span class="package-tree__label">{{ row.image.image_name }}</span>
+              <span class="package-tree__count">{{ row.image.tags.length }}</span>
+              <gbt-icon name="chevron-down" class="package-tree__chevron" aria-hidden="true" />
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  }
+}

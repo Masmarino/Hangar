@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO docker_manifest_list_members (list_manifest_id, member_digest) SELECT $1, * FROM UNNEST($2::text[]) ON CONFLICT (list_manifest_id, member_digest) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5560e815993780cd2cc23cbc69bb549e35efb3abeb74551cc6e80fa8929f62e2"
+}

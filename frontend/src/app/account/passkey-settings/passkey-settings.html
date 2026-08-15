@@ -1,0 +1,61 @@
+<gbt-card heading="Clés d'accès (passkeys)" icon="key">
+<div class="stack">
+  @if (!supported) {
+    <p class="gbt-form-error" role="alert">Votre navigateur ne prend pas en charge les clés d'accès.</p>
+  } @else if (loading()) {
+    <p>Chargement…</p>
+  } @else {
+    @if (passkeys().length > 0) {
+      <ul class="passkey-settings__list">
+        @for (passkey of passkeys(); track passkey.id) {
+          <li>
+            <span>{{ passkey.name }}</span>
+            <gbt-input
+              label="Mot de passe actuel"
+              type="password"
+              showPasswordLabel="Afficher le mot de passe"
+              hidePasswordLabel="Masquer le mot de passe"
+              [ngModel]="passwordFor(passkey.id)"
+              (ngModelChange)="setPasswordFor(passkey.id, $event)"
+            />
+            <gbt-button
+              text="Supprimer"
+              variant="danger"
+              [loading]="deletingIds().has(passkey.id)"
+              loadingLabel="Chargement en cours"
+              [disabled]="passwordFor(passkey.id).trim() === ''"
+              (clicked)="delete(passkey.id)"
+            />
+          </li>
+        }
+      </ul>
+    } @else {
+      <p>Aucune clé d'accès enregistrée.</p>
+    }
+
+    @if (errorMessage(); as message) {
+      <p class="gbt-form-error" role="alert">{{ message }}</p>
+    }
+
+    @if (addingName()) {
+      <gbt-input
+        label="Nom de la clé (ex. « MacBook Touch ID »)"
+        [ngModel]="newPasskeyName()"
+        (ngModelChange)="newPasskeyName.set($event)"
+      />
+      <div class="passkey-settings__actions">
+        <gbt-button
+          text="Enregistrer une nouvelle clé"
+          [loading]="registering()"
+          loadingLabel="Chargement en cours"
+          [disabled]="newPasskeyName().trim() === ''"
+          (clicked)="register()"
+        />
+        <gbt-button text="Annuler" variant="secondary" (clicked)="cancelAdding()" />
+      </div>
+    } @else {
+      <gbt-button text="Ajouter une clé d'accès" (clicked)="startAdding()" />
+    }
+  }
+</div>
+</gbt-card>

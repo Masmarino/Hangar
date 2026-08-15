@@ -1,0 +1,133 @@
+<div class="container">
+  @if (loading()) {
+    <p>Chargement…</p>
+  } @else if (organization(); as org) {
+    <gbt-card>
+      <div class="stack">
+        <h2>{{ org.display_name }}</h2>
+        <p>Sous-domaine : {{ org.slug }}</p>
+      </div>
+    </gbt-card>
+
+    <gbt-card>
+      <div class="stack">
+        <h3>Authentification</h3>
+        @if (identityProviderConfigured()) {
+          <p>
+            {{ selectedProviderType() === 'oidc' ? 'OIDC' : 'LDAP' }} est actuellement configuré pour
+            cette organisation.
+          </p>
+        } @else {
+          <p>Cette organisation utilise des comptes locaux.</p>
+        }
+
+        <gbt-select
+          label="Type de fournisseur d'identité"
+          placeholder="Sélectionner…"
+          [options]="providerTypeOptions"
+          [ngModel]="selectedProviderType()"
+          (ngModelChange)="selectedProviderType.set($event)"
+        />
+
+        @if (selectedProviderType() === 'ldap') {
+          <gbt-input
+            label="URL du serveur"
+            [ngModel]="serverUrl()"
+            (ngModelChange)="serverUrl.set($event)"
+            placeholder="ldaps://dc.corp.example:636"
+          />
+          <gbt-input
+            label="DN du compte de service"
+            [ngModel]="bindDn()"
+            (ngModelChange)="bindDn.set($event)"
+            placeholder="cn=service,dc=corp,dc=example"
+          />
+          <gbt-input
+            label="Mot de passe du compte de service"
+            type="password"
+            [ngModel]="bindPassword()"
+            (ngModelChange)="bindPassword.set($event)"
+            [placeholder]="
+              bindPasswordSet() ? 'Laisser vide pour conserver le mot de passe actuel' : ''
+            "
+            showPasswordLabel="Afficher le mot de passe"
+            hidePasswordLabel="Masquer le mot de passe"
+          />
+          <gbt-input
+            label="Base de recherche"
+            [ngModel]="userSearchBase()"
+            (ngModelChange)="userSearchBase.set($event)"
+            placeholder="ou=people,dc=corp,dc=example"
+          />
+          <gbt-input
+            label="Filtre de recherche"
+            [ngModel]="userSearchFilter()"
+            (ngModelChange)="userSearchFilter.set($event)"
+            placeholder="(uid={{ '{' }}username{{ '}' }})"
+          />
+          <gbt-input
+            label="Attribut e-mail"
+            [ngModel]="emailAttribute()"
+            (ngModelChange)="emailAttribute.set($event)"
+            placeholder="mail"
+          />
+        } @else {
+          <gbt-input
+            label="URL de l'émetteur (issuer)"
+            [ngModel]="issuerUrl()"
+            (ngModelChange)="issuerUrl.set($event)"
+            placeholder="https://accounts.example.com"
+          />
+          <gbt-input
+            label="Client ID"
+            [ngModel]="clientId()"
+            (ngModelChange)="clientId.set($event)"
+            placeholder="hangar"
+          />
+          <gbt-input
+            label="Client secret"
+            type="password"
+            [ngModel]="clientSecret()"
+            (ngModelChange)="clientSecret.set($event)"
+            [placeholder]="clientSecretSet() ? 'Laisser vide pour conserver le secret actuel' : ''"
+            showPasswordLabel="Afficher le secret"
+            hidePasswordLabel="Masquer le secret"
+          />
+        }
+
+        @if (errorMessage(); as message) {
+          <p class="gbt-form-error" role="alert">{{ message }}</p>
+        }
+        @if (saved()) {
+          <p>Configuration enregistrée.</p>
+        }
+
+        <gbt-button
+          text="Enregistrer"
+          [loading]="saving()"
+          loadingLabel="Enregistrement…"
+          [disabled]="hasErrors() || saving()"
+          (clicked)="save()"
+        />
+        @if (identityProviderConfigured()) {
+          <gbt-button
+            text="Revenir aux comptes locaux"
+            variant="secondary"
+            [loading]="clearing()"
+            loadingLabel="Suppression…"
+            (clicked)="clear()"
+          />
+        }
+      </div>
+    </gbt-card>
+
+    <gbt-card>
+      <div class="stack">
+        <h3>Membres</h3>
+        <app-organization-members [organizationId]="routeOrganizationId()" />
+      </div>
+    </gbt-card>
+  } @else if (errorMessage(); as message) {
+    <p class="gbt-form-error" role="alert">{{ message }}</p>
+  }
+</div>

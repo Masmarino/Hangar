@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT version FROM domain_events WHERE aggregate_type = 'PackageRepository' AND aggregate_id = $1 ORDER BY version DESC LIMIT 1 FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "version",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "10a65440f4385a0b2f5c2a1b9eb432b8fccb7d4782b1b8492c351a4c655977b7"
+}

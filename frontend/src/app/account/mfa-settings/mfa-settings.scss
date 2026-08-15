@@ -1,0 +1,34 @@
+:host {
+  display: block;
+}
+
+.mfa-settings__qr {
+  display: block;
+  width: 200px;
+  height: 200px;
+  margin: 0.5rem 0;
+}
+
+.mfa-settings__secret {
+  font-family: monospace;
+  letter-spacing: 0.05em;
+  background: var(--bg-panel);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--site-border-radius);
+  display: inline-block;
+}
+
+.mfa-settings__codes {
+  font-family: monospace;
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem 1rem;
+}
+
+.mfa-settings__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

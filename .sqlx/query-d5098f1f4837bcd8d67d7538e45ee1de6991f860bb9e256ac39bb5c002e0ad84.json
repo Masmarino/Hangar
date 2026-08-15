@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO organization_identity_providers (organization_id, config, updated_at) VALUES ($1, $2, now()) ON CONFLICT (organization_id) DO UPDATE SET config = EXCLUDED.config, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d5098f1f4837bcd8d67d7538e45ee1de6991f860bb9e256ac39bb5c002e0ad84"
+}

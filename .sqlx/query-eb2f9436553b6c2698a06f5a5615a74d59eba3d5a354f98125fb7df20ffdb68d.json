@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT tag FROM docker_tags WHERE package_repository_id = $1 AND image_name = $2 ORDER BY tag",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tag",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "eb2f9436553b6c2698a06f5a5615a74d59eba3d5a354f98125fb7df20ffdb68d"
+}
