@@ -147,7 +147,7 @@ jobs:
 
       - name: Grype source scan
         id: grype-fs
-        uses: anchore/scan-action@64a33b277ea7a1215a3c142735a1091341939ff5 # v4
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         continue-on-error: true
         with:
           path: "."
@@ -237,7 +237,7 @@ jobs:
 
       - name: Grype image scan
         id: grype-image
-        uses: anchore/scan-action@64a33b277ea7a1215a3c142735a1091341939ff5 # v4
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         continue-on-error: true
         with:
           image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
