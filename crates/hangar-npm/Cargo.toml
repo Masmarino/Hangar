@@ -14,7 +14,7 @@ tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tracing = "0.1"
-tower-http = { version = "0.6", features = ["decompression-gzip"] }
+tower-http = { version = "0.7", features = ["decompression-gzip"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 base64 = "0.23.1"
