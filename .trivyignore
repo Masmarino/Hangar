@@ -1,0 +1,7 @@
+# CVE-2026-84303/84304/84445 (google.golang.org/grpc): found in the vendored `trivy` binary
+# itself (see Dockerfile, runtime stage — Hangar bundles Trivy to scan images pushed to it). A
+# fix exists upstream (grpc-go >=1.82.2/1.83.1) but aquasecurity hasn't cut a new Trivy release
+# with the bumped dependency yet, at v0.74.0 (latest as of 2026-09-09). Revisit when they do.
+CVE-2026-84303
+CVE-2026-84304
+CVE-2026-84445
