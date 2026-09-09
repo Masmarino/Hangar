@@ -7,7 +7,7 @@ edition.workspace = true
 hangar-domain = { path = "../hangar-domain" }
 hangar-application = { path = "../hangar-application" }
 hangar-infrastructure = { path = "../hangar-infrastructure" }
-axum = "0.7"
+axum = "0.8"
 axum-extra = { version = "0.9", features = ["typed-header"] }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }

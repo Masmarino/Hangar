@@ -9,7 +9,7 @@ hangar-application = { path = "../hangar-application" }
 hangar-infrastructure = { path = "../hangar-infrastructure" }
 hangar-npm = { path = "../hangar-npm" }
 hangar-docker = { path = "../hangar-docker" }
-axum = "0.7"
+axum = "0.8"
 axum-extra = { version = "0.9", features = ["typed-header", "cookie"] }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
