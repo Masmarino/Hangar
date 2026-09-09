@@ -7,7 +7,6 @@ edition.workspace = true
 hangar-domain = { path = "../hangar-domain" }
 hangar-application = { path = "../hangar-application" }
 async-trait = "0.1"
-thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4", "serde"] }
@@ -26,8 +25,6 @@ lettre = { version = "0.11.23", default-features = false, features = ["tokio1-ru
 tracing = "0.1"
 ldap3 = { version = "0.12", default-features = false, features = ["tls-rustls-ring"] }
 openidconnect = "4"
-bytes = "1"
-futures-core = "0.3"
 futures-util = "0.3"
 tokio-util = { version = "0.7", features = ["io"] }
 

@@ -1,4 +1,4 @@
-FROM node:26-alpine3.24 AS frontend-build
+FROM node:26-alpine3.24@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3 AS frontend-build
 
 WORKDIR /app/frontend
 
@@ -10,7 +10,7 @@ COPY frontend/ ./
 
 RUN npm run build -- --configuration production
 
-FROM rust:1.98.0-alpine3.24 AS chef
+FROM rust:1.98.0-alpine3.24@sha256:a10e64dd139b7387337c7fbe8aca31b959b57b2fd4c8ae20a02cf1d6ea424dce AS chef
 
 WORKDIR /app
 
@@ -38,7 +38,7 @@ COPY .sqlx ./.sqlx
 
 RUN cargo build --release -p hangar-api --locked
 
-FROM alpine:3.24 AS runtime
+FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS runtime
 
 WORKDIR /app
 

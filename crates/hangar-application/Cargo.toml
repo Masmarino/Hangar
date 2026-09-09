@@ -3,6 +3,9 @@ name = "hangar-application"
 version = "0.1.0"
 edition.workspace = true
 
+[package.metadata.cargo-machete]
+ignored = ["openssl"]
+
 [dependencies]
 hangar-domain = { path = "../hangar-domain" }
 async-trait = "0.1"
@@ -19,10 +22,12 @@ rand = "0.10.2"
 semver = "1"
 totp-rs = { version = "6.0.0", default-features = false, features = ["otpauth", "std"] }
 webauthn-rs = "0.5.5"
-openssl = { version = "0.10.81", features = ["vendored"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 bytes = "1"
 tracing = "0.1"
+# Not used directly — forces "vendored" onto webauthn-rs's transitive openssl-sys, needed since the
+# musl/Alpine Docker build has no system OpenSSL. Removing this breaks `docker build`.
+openssl = { version = "0.10.81", features = ["vendored"] }
 
 [dev-dependencies]
 hangar-infrastructure = { path = "../hangar-infrastructure" }
