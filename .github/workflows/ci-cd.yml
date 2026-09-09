@@ -23,7 +23,7 @@ permissions:
 env:
   # keep in sync with rust-toolchain.toml — that's the real source of truth
   RUST_VERSION: "1.98.1"
-  NODE_VERSION: "24"
+  NODE_VERSION: "26"
   DOCKER_IMAGE: masmarino/hangar
 
 jobs:
@@ -57,7 +57,7 @@ jobs:
         with:
           toolchain: ${{ env.RUST_VERSION }}
 
-      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
 
       - name: cargo build
         run: cargo build --workspace --locked
@@ -140,14 +140,14 @@ jobs:
         if: always()
         # This upload can fail on its own (e.g. Advanced Security disabled) — not a reason to fail the job; the explicit check below is what actually gates it.
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@5ba2889ada762081db2c4f32a729827dce632c7b # v3
+        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d # v3
         with:
           sarif_file: trivy-fs-results.sarif
           category: trivy-source
 
       - name: Grype source scan
         id: grype-fs
-        uses: anchore/scan-action@64a33b277ea7a1215a3c142735a1091341939ff5 # v4
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         continue-on-error: true
         with:
           path: "."
@@ -158,7 +158,7 @@ jobs:
       - name: Upload Grype SARIF
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@5ba2889ada762081db2c4f32a729827dce632c7b # v3
+        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d # v3
         with:
           sarif_file: ${{ steps.grype-fs.outputs.sarif }}
           category: grype-source
@@ -194,7 +194,7 @@ jobs:
 
       - name: Docker metadata (tags)
         id: meta
-        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.DOCKER_IMAGE }}
           tags: |
@@ -230,14 +230,14 @@ jobs:
       - name: Upload Trivy image SARIF
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@5ba2889ada762081db2c4f32a729827dce632c7b # v3
+        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d # v3
         with:
           sarif_file: trivy-image-results.sarif
           category: trivy-image
 
       - name: Grype image scan
         id: grype-image
-        uses: anchore/scan-action@64a33b277ea7a1215a3c142735a1091341939ff5 # v4
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         continue-on-error: true
         with:
           image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
@@ -248,7 +248,7 @@ jobs:
       - name: Upload Grype image SARIF
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@5ba2889ada762081db2c4f32a729827dce632c7b # v3
+        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d # v3
         with:
           sarif_file: ${{ steps.grype-image.outputs.sarif }}
           category: grype-image
@@ -262,7 +262,7 @@ jobs:
 
       - name: Log in to Docker Hub
         if: env.IS_PUBLISHABLE == 'true'
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

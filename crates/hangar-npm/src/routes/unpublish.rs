@@ -18,8 +18,8 @@ use crate::state::NpmState;
 
 pub fn router() -> Router<NpmState> {
     Router::new()
-        .route("/:repository/:package/-rev/:rev", delete(unpublish_package).put(unpublish_via_document_put))
-        .route("/:repository/:package/-/:filename/-rev/:rev", delete(unpublish_version))
+        .route("/{repository}/{package}/-rev/{rev}", delete(unpublish_package).put(unpublish_via_document_put))
+        .route("/{repository}/{package}/-/{filename}/-rev/{rev}", delete(unpublish_version))
 }
 
 async fn unpublish_package(

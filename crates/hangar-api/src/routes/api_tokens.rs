@@ -11,7 +11,7 @@ use crate::dto::{application_error_response, ErrorResponse};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/api/tokens", get(list_tokens).post(create_token)).route("/api/tokens/:id", delete(revoke_token))
+    Router::new().route("/api/tokens", get(list_tokens).post(create_token)).route("/api/tokens/{id}", delete(revoke_token))
 }
 
 #[derive(Serialize)]

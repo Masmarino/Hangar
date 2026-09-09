@@ -33,7 +33,7 @@ describe('UsersService', () => {
       .mockReturnValue(of([]))
     const service = setup({ list })
 
-    service.list().subscribe({ error: () => {} })
+    service.list().subscribe({ error: () => undefined })
     service.list().subscribe()
 
     expect(list).toHaveBeenCalledTimes(2)

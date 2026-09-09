@@ -23,7 +23,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/me/mfa/passkey", get(list_passkeys))
         .route("/api/me/mfa/passkey/register/start", axum::routing::post(start_passkey_registration))
         .route("/api/me/mfa/passkey/register/finish", axum::routing::post(finish_passkey_registration))
-        .route("/api/me/mfa/passkey/:id", axum::routing::delete(delete_passkey))
+        .route("/api/me/mfa/passkey/{id}", axum::routing::delete(delete_passkey))
 }
 
 #[derive(Serialize)]

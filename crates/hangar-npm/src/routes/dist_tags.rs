@@ -17,8 +17,8 @@ use crate::state::NpmState;
 
 pub fn router() -> Router<NpmState> {
     Router::new()
-        .route("/:repository/-/package/:package/dist-tags", get(list_tags))
-        .route("/:repository/-/package/:package/dist-tags/:tag", put(set_tag).delete(delete_tag))
+        .route("/{repository}/-/package/{package}/dist-tags", get(list_tags))
+        .route("/{repository}/-/package/{package}/dist-tags/{tag}", put(set_tag).delete(delete_tag))
 }
 
 async fn list_tags(

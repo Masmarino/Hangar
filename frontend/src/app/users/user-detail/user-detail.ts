@@ -54,7 +54,9 @@ export class UserDetail {
   // Granting/revoking super-admin status is not an organization-scoped right.
   readonly isSuperAdminViewer = computed(() => this.me.isSuperAdmin())
   // Hides delete/resend-invitation on a super-admin target — the backend 403s an org admin there.
-  readonly canManageTarget = computed(() => this.isSuperAdminViewer() || !this.user()?.is_super_admin)
+  readonly canManageTarget = computed(
+    () => this.isSuperAdminViewer() || !this.user()?.is_super_admin,
+  )
 
   constructor() {
     effect(() => this.pageTitle.title.set(this.username()))

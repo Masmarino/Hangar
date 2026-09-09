@@ -63,7 +63,12 @@ export class OrganizationMembers implements OnInit {
     this.inviting.set(true)
     this.errorMessage.set(null)
     this.organizationMembersService
-      .invite(this.organizationId(), this.newUsername(), this.newEmail(), this.newIsOrganizationAdmin())
+      .invite(
+        this.organizationId(),
+        this.newUsername(),
+        this.newEmail(),
+        this.newIsOrganizationAdmin(),
+      )
       .subscribe({
         next: () => {
           this.inviting.set(false)
@@ -80,13 +85,19 @@ export class OrganizationMembers implements OnInit {
   toggleOrganizationAdmin(member: OrganizationMember): void {
     const promoting = !member.is_organization_admin
     const verb = promoting ? 'promouvoir' : 'rétrograder'
-    if (!confirm(`Voulez-vous ${verb} ${member.username} ${promoting ? 'en administrateur' : "de son rôle d'administrateur"} de l'organisation ?`)) {
+    if (
+      !confirm(
+        `Voulez-vous ${verb} ${member.username} ${promoting ? 'en administrateur' : "de son rôle d'administrateur"} de l'organisation ?`,
+      )
+    ) {
       return
     }
     this.errorMessage.set(null)
-    this.organizationMembersService.setOrganizationAdmin(this.organizationId(), member.id, promoting).subscribe({
-      next: () => this.reload(),
-      error: () => this.errorMessage.set("Échec de la mise à jour du statut d'administrateur."),
-    })
+    this.organizationMembersService
+      .setOrganizationAdmin(this.organizationId(), member.id, promoting)
+      .subscribe({
+        next: () => this.reload(),
+        error: () => this.errorMessage.set("Échec de la mise à jour du statut d'administrateur."),
+      })
   }
 }

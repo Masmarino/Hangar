@@ -20,31 +20,31 @@ use crate::state::AppState;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/api/repositories", get(list_repositories).post(create_repository))
-        .route("/api/repositories/:id", get(get_repository).patch(rename_repository).delete(delete_repository))
-        .route("/api/repositories/:id/group-members", post(add_group_member))
-        .route("/api/repositories/:id/group-members/:member_id", axum::routing::delete(remove_group_member))
-        .route("/api/repositories/:id/quota", put(set_repository_quota))
-        .route("/api/repositories/:id/retention", put(set_retention_policy))
-        .route("/api/repositories/:id/permissions", get(list_permissions))
-        .route("/api/repositories/:id/permissions/:user_id", put(grant_permission).delete(revoke_permission))
-        .route("/api/repositories/:id/packages", get(list_repository_packages))
+        .route("/api/repositories/{id}", get(get_repository).patch(rename_repository).delete(delete_repository))
+        .route("/api/repositories/{id}/group-members", post(add_group_member))
+        .route("/api/repositories/{id}/group-members/{member_id}", axum::routing::delete(remove_group_member))
+        .route("/api/repositories/{id}/quota", put(set_repository_quota))
+        .route("/api/repositories/{id}/retention", put(set_retention_policy))
+        .route("/api/repositories/{id}/permissions", get(list_permissions))
+        .route("/api/repositories/{id}/permissions/{user_id}", put(grant_permission).delete(revoke_permission))
+        .route("/api/repositories/{id}/packages", get(list_repository_packages))
         .route(
-            "/api/repositories/:id/packages/npm/:name",
+            "/api/repositories/{id}/packages/npm/{name}",
             get(get_npm_package_details).delete(delete_npm_package),
         )
-        .route("/api/repositories/:id/packages/npm/:name/versions/:version", axum::routing::delete(delete_npm_package_version))
-        .route("/api/repositories/:id/packages/npm/:name/audit", get(audit_npm_package))
+        .route("/api/repositories/{id}/packages/npm/{name}/versions/{version}", axum::routing::delete(delete_npm_package_version))
+        .route("/api/repositories/{id}/packages/npm/{name}/audit", get(audit_npm_package))
         .route(
-            "/api/repositories/:id/packages/npm/:name/versions/:version/dependency-audit",
+            "/api/repositories/{id}/packages/npm/{name}/versions/{version}/dependency-audit",
             get(get_dependency_audit).post(scan_dependency_tree),
         )
         .route(
-            "/api/repositories/:id/packages/docker/:image",
+            "/api/repositories/{id}/packages/docker/{image}",
             get(get_docker_image_details).delete(delete_docker_image),
         )
-        .route("/api/repositories/:id/packages/docker/:image/tags/:tag", axum::routing::delete(delete_docker_tag))
+        .route("/api/repositories/{id}/packages/docker/{image}/tags/{tag}", axum::routing::delete(delete_docker_tag))
         .route(
-            "/api/repositories/:id/packages/docker/:image/tags/:tag/scan",
+            "/api/repositories/{id}/packages/docker/{image}/tags/{tag}/scan",
             get(get_docker_image_scan).post(scan_docker_image),
         )
 }

@@ -34,7 +34,7 @@ describe('UserDetail', () => {
             paramMap: of(convertToParamMap({ id: 'user-2' })),
           },
         },
-        { provide: MeService, useValue: { isSuperAdmin: () => (options?.isSuperAdmin ?? true) } },
+        { provide: MeService, useValue: { isSuperAdmin: () => options?.isSuperAdmin ?? true } },
       ],
     })
     return {
@@ -487,8 +487,8 @@ describe('UserDetail', () => {
     fixture.detectChanges()
 
     expect(fixture.componentInstance.loadError()).toBe(true)
-    expect(fixture.nativeElement.textContent).toContain('Échec du chargement');
-    expect(fixture.nativeElement.textContent).not.toContain('Supprimer');
+    expect(fixture.nativeElement.textContent).toContain('Échec du chargement')
+    expect(fixture.nativeElement.textContent).not.toContain('Supprimer')
   })
 
   describe('as an organization admin (not a super-admin)', () => {
@@ -508,9 +508,12 @@ describe('UserDetail', () => {
     it('still shows delete and resend-invitation for a regular (non-super-admin) target', () => {
       const { fixture, httpMock } = setup({ isSuperAdmin: false })
       fixture.detectChanges()
-      httpMock
-        .expectOne('/api/users/user-2')
-        .flush({ id: 'user-2', username: 'florian', is_super_admin: false, invitation_pending: true })
+      httpMock.expectOne('/api/users/user-2').flush({
+        id: 'user-2',
+        username: 'florian',
+        is_super_admin: false,
+        invitation_pending: true,
+      })
       httpMock.expectOne('/api/users/user-2/permissions').flush([])
       httpMock.expectOne('/api/repositories').flush([])
       fixture.detectChanges()
@@ -522,9 +525,12 @@ describe('UserDetail', () => {
     it('hides delete and resend-invitation when the target is a super-admin — a global privilege outside their reach', () => {
       const { fixture, httpMock } = setup({ isSuperAdmin: false })
       fixture.detectChanges()
-      httpMock
-        .expectOne('/api/users/user-2')
-        .flush({ id: 'user-2', username: 'florian', is_super_admin: true, invitation_pending: true })
+      httpMock.expectOne('/api/users/user-2').flush({
+        id: 'user-2',
+        username: 'florian',
+        is_super_admin: true,
+        invitation_pending: true,
+      })
       httpMock.expectOne('/api/users/user-2/permissions').flush([])
       httpMock.expectOne('/api/repositories').flush([])
       fixture.detectChanges()

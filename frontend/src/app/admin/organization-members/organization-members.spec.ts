@@ -21,7 +21,15 @@ describe('OrganizationMembers', () => {
   function setup() {
     serviceSpy = { list: vi.fn(), invite: vi.fn(), setOrganizationAdmin: vi.fn() }
     serviceSpy.list.mockReturnValue(
-      of([{ id: 'user-1', username: 'florian', email: 'florian@example.com', is_organization_admin: false, invitation_pending: false }]),
+      of([
+        {
+          id: 'user-1',
+          username: 'florian',
+          email: 'florian@example.com',
+          is_organization_admin: false,
+          invitation_pending: false,
+        },
+      ]),
     )
     TestBed.configureTestingModule({
       imports: [OrganizationMembers],
@@ -38,14 +46,26 @@ describe('OrganizationMembers', () => {
 
     expect(serviceSpy.list).toHaveBeenCalledWith('org-1')
     expect(component.members()).toEqual([
-      { id: 'user-1', username: 'florian', email: 'florian@example.com', is_organization_admin: false, invitation_pending: false },
+      {
+        id: 'user-1',
+        username: 'florian',
+        email: 'florian@example.com',
+        is_organization_admin: false,
+        invitation_pending: false,
+      },
     ])
   })
 
   it('invites a new member and reloads the list', () => {
     setup()
     serviceSpy.invite.mockReturnValue(
-      of({ id: 'user-2', username: 'newmember', email: 'newmember@example.com', is_organization_admin: false, invitation_pending: true }),
+      of({
+        id: 'user-2',
+        username: 'newmember',
+        email: 'newmember@example.com',
+        is_organization_admin: false,
+        invitation_pending: true,
+      }),
     )
     component.startAdding()
     component.newUsername.set('newmember')
@@ -53,7 +73,12 @@ describe('OrganizationMembers', () => {
 
     component.invite()
 
-    expect(serviceSpy.invite).toHaveBeenCalledWith('org-1', 'newmember', 'newmember@example.com', false)
+    expect(serviceSpy.invite).toHaveBeenCalledWith(
+      'org-1',
+      'newmember',
+      'newmember@example.com',
+      false,
+    )
     expect(serviceSpy.list).toHaveBeenCalledTimes(2)
     expect(component.addingMember()).toBe(false)
   })

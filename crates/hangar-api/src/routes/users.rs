@@ -14,12 +14,12 @@ use crate::state::AppState;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/api/users", get(list_users).post(create_user))
-        .route("/api/users/:id", get(get_user).delete(delete_user))
-        .route("/api/users/:id/super-admin", axum::routing::put(set_super_admin))
-        .route("/api/users/:id/resend-invitation", axum::routing::post(resend_invitation))
+        .route("/api/users/{id}", get(get_user).delete(delete_user))
+        .route("/api/users/{id}/super-admin", axum::routing::put(set_super_admin))
+        .route("/api/users/{id}/resend-invitation", axum::routing::post(resend_invitation))
         .route("/api/users/lookup", get(lookup_user))
         .route("/api/users/search", get(search_users))
-        .route("/api/users/:id/permissions", get(list_user_permissions))
+        .route("/api/users/{id}/permissions", get(list_user_permissions))
 }
 
 #[derive(Deserialize)]

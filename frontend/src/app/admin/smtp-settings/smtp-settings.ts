@@ -71,7 +71,9 @@ export class SmtpSettingsAdmin implements OnInit {
     return null
   })
 
-  private readonly rawHostError = computed(() => (this.host().trim() === '' ? "L'hôte est requis." : null))
+  private readonly rawHostError = computed(() =>
+    this.host().trim() === '' ? "L'hôte est requis." : null,
+  )
 
   private readonly rawUsernameError = computed(() =>
     this.username().trim() === '' ? "L'identifiant est requis." : null,
@@ -95,7 +97,9 @@ export class SmtpSettingsAdmin implements OnInit {
   readonly hostError = computed(() => (this.attemptedSave() ? this.rawHostError() : null))
   readonly portError = computed(() => (this.attemptedSave() ? this.rawPortError() : null))
   readonly usernameError = computed(() => (this.attemptedSave() ? this.rawUsernameError() : null))
-  readonly fromAddressError = computed(() => (this.attemptedSave() ? this.rawFromAddressError() : null))
+  readonly fromAddressError = computed(() =>
+    this.attemptedSave() ? this.rawFromAddressError() : null,
+  )
   readonly fromNameError = computed(() => (this.attemptedSave() ? this.rawFromNameError() : null))
   readonly passwordError = computed(() => (this.attemptedSave() ? this.rawPasswordError() : null))
 

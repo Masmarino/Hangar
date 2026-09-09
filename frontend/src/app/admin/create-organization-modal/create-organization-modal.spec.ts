@@ -39,7 +39,9 @@ describe('CreateOrganizationModal', () => {
 
     fixture.componentInstance.form.setValue({ slug: 'acme', displayName: 'Acme Corp' })
     fixture.componentInstance.submit()
-    httpMock.expectOne('/api/organizations').flush({ id: 'org-1', slug: 'acme', display_name: 'Acme Corp' })
+    httpMock
+      .expectOne('/api/organizations')
+      .flush({ id: 'org-1', slug: 'acme', display_name: 'Acme Corp' })
 
     expect(created).toBe(true)
   })

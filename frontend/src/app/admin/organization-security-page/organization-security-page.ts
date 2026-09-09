@@ -20,8 +20,7 @@ import { OrganizationContextBanner } from '../organization-context-banner/organi
 export class OrganizationSecurityPage {
   private readonly route = inject(ActivatedRoute)
 
-  readonly organizationId = toSignal(
-    this.route.paramMap.pipe(map((params) => params.get('id')!)),
-    { requireSync: true },
-  )
+  readonly organizationId = toSignal(this.route.paramMap.pipe(map((params) => params.get('id')!)), {
+    requireSync: true,
+  })
 }

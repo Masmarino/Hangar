@@ -101,7 +101,7 @@ describe('MeService', () => {
       )
     const service = setup({ load })
 
-    service.load().subscribe({ error: () => {} })
+    service.load().subscribe({ error: () => undefined })
     expect(service.username()).toBeNull()
 
     service.load().subscribe()

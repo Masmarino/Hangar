@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::StatusCode;
 use axum::http::request::Parts;
@@ -10,7 +9,6 @@ use crate::state::NpmState;
 #[derive(Clone)]
 pub struct ResolvedOrganization(pub Organization);
 
-#[async_trait]
 impl FromRequestParts<NpmState> for ResolvedOrganization {
     type Rejection = StatusCode;
 

@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use axum::RequestPartsExt;
 use axum::extract::FromRequestParts;
 use axum::http::StatusCode;
@@ -19,7 +18,6 @@ pub struct NpmAuthUser {
     pub organization_id: Uuid,
 }
 
-#[async_trait]
 impl FromRequestParts<NpmState> for NpmAuthUser {
     type Rejection = StatusCode;
 

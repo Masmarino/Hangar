@@ -157,7 +157,7 @@ describe('AuditLog', () => {
     const fixture = TestBed.createComponent(AuditLog)
     const httpMock = TestBed.inject(HttpTestingController)
     const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock')
-    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
 
     fixture.detectChanges()
     httpMock

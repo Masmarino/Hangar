@@ -22,7 +22,13 @@ describe('HttpAuthAdapter', () => {
     const req = httpMock.expectOne('/api/auth/login')
     expect(req.request.method).toBe('POST')
     expect(req.request.body).toEqual({ username: 'florian', password: 's3cret!' })
-    req.flush({ token: 'a-jwt-token', mfa_token: null, mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: false })
+    req.flush({
+      token: 'a-jwt-token',
+      mfa_token: null,
+      mfa_setup_required: false,
+      mfa_has_totp: false,
+      mfa_has_passkey: false,
+    })
     httpMock.verify()
   })
 
@@ -38,7 +44,13 @@ describe('HttpAuthAdapter', () => {
       code: '123456',
       backup_code: undefined,
     })
-    req.flush({ token: 'a-jwt-token', mfa_token: null, mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: false })
+    req.flush({
+      token: 'a-jwt-token',
+      mfa_token: null,
+      mfa_setup_required: false,
+      mfa_has_totp: false,
+      mfa_has_passkey: false,
+    })
     httpMock.verify()
   })
 
@@ -54,7 +66,13 @@ describe('HttpAuthAdapter', () => {
       email: 'florian@example.com',
       password: 's3cret!',
     })
-    req.flush({ token: null, mfa_token: 'mfa-token-123', mfa_setup_required: true, mfa_has_totp: false, mfa_has_passkey: false })
+    req.flush({
+      token: null,
+      mfa_token: 'mfa-token-123',
+      mfa_setup_required: true,
+      mfa_has_totp: false,
+      mfa_has_passkey: false,
+    })
     httpMock.verify()
   })
 
@@ -109,7 +127,13 @@ describe('HttpAuthAdapter', () => {
       credential: { id: 'cred-1' },
       name: 'My key',
     })
-    req.flush({ token: 'a-jwt-token', mfa_token: null, mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: false })
+    req.flush({
+      token: 'a-jwt-token',
+      mfa_token: null,
+      mfa_setup_required: false,
+      mfa_has_totp: false,
+      mfa_has_passkey: false,
+    })
     httpMock.verify()
   })
 
@@ -128,7 +152,13 @@ describe('HttpAuthAdapter', () => {
     const req = httpMock.expectOne('/api/auth/sso/ldap')
     expect(req.request.method).toBe('POST')
     expect(req.request.body).toEqual({ username: 'florian', password: 's3cret!' })
-    req.flush({ token: 'a-jwt-token', mfa_token: null, mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: false })
+    req.flush({
+      token: 'a-jwt-token',
+      mfa_token: null,
+      mfa_setup_required: false,
+      mfa_has_totp: false,
+      mfa_has_passkey: false,
+    })
     httpMock.verify()
   })
 })

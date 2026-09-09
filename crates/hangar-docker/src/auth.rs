@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use axum::Json;
 use axum::RequestPartsExt;
 use axum::extract::{FromRequestParts, Path};
@@ -40,7 +39,6 @@ fn unauthorized(state: &DockerState, scope: Option<&str>) -> Response {
         .into_response()
 }
 
-#[async_trait]
 impl FromRequestParts<DockerState> for DockerAuthUser {
     type Rejection = Response;
 

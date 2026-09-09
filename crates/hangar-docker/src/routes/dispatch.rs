@@ -24,7 +24,7 @@ async fn read_capped(body: Body, limit: usize) -> Result<Bytes, Response> {
 
 pub fn router() -> Router<DockerState> {
     Router::new().route(
-        "/:repository/*rest",
+        "/{repository}/{*rest}",
         get(handle_get).head(handle_head).post(handle_post).put(handle_put).patch(handle_patch).delete(handle_delete),
     )
 }

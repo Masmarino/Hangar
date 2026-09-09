@@ -18,7 +18,7 @@ describe('ExportAdmin', () => {
   it('downloads the configuration export when the button is clicked', () => {
     const { fixture, httpMock } = render()
     const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock')
-    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
 
     fixture.componentInstance.downloadConfiguration()
 

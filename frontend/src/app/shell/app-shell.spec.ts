@@ -242,7 +242,7 @@ describe('AppShell', () => {
       )
     })
 
-    it('still appears (and auto-expands) on one of that organization\'s own sub-pages, e.g. its metrics', async () => {
+    it("still appears (and auto-expands) on one of that organization's own sub-pages, e.g. its metrics", async () => {
       const fixture = setupOnOrganizationRoutes()
       fixture.detectChanges()
       flushMe({ id: 'user-1', username: 'admin', is_super_admin: true })

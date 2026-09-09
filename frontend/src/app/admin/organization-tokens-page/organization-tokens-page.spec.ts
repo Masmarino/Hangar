@@ -23,7 +23,10 @@ describe('OrganizationTokensPage', () => {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: convertToParamMap({ id: 'org-1' }) } },
         },
-        { provide: AdminApiTokensService, useValue: { list: () => of([]), revoke: () => of(undefined) } },
+        {
+          provide: AdminApiTokensService,
+          useValue: { list: () => of([]), revoke: () => of(undefined) },
+        },
       ],
     })
     const fixture = TestBed.createComponent(OrganizationTokensPage)

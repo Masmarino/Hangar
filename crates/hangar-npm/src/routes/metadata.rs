@@ -16,8 +16,8 @@ use crate::state::NpmState;
 
 pub fn router() -> Router<NpmState> {
     Router::new()
-        .route("/:repository/:package", get(get_metadata))
-        .route("/:repository/:package/-/:filename", get(get_tarball))
+        .route("/{repository}/{package}", get(get_metadata))
+        .route("/{repository}/{package}/-/{filename}", get(get_tarball))
 }
 
 async fn get_metadata(

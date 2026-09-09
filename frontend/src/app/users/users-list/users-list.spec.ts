@@ -12,8 +12,22 @@ import { MeService } from '../../shell/application/me.service'
 const PUBLIC_ORG = { id: 'org-public', slug: 'public', display_name: 'Public', is_public: true }
 const ACME_ORG = { id: 'org-acme', slug: 'acme', display_name: 'Acme Corp', is_public: false }
 
-const PUBLIC_USER = { id: 'u1', username: 'florian', is_super_admin: true, organization_id: 'org-public', email: null, invitation_pending: false }
-const ACME_USER = { id: 'u2', username: 'acme-user', is_super_admin: false, organization_id: 'org-acme', email: null, invitation_pending: false }
+const PUBLIC_USER = {
+  id: 'u1',
+  username: 'florian',
+  is_super_admin: true,
+  organization_id: 'org-public',
+  email: null,
+  invitation_pending: false,
+}
+const ACME_USER = {
+  id: 'u2',
+  username: 'acme-user',
+  is_super_admin: false,
+  organization_id: 'org-acme',
+  email: null,
+  invitation_pending: false,
+}
 
 describe('UsersList', () => {
   afterEach(() => {
@@ -28,7 +42,7 @@ describe('UsersList', () => {
         provideRouter([]),
         ...userProviders,
         ...organizationsProviders,
-        { provide: MeService, useValue: { isSuperAdmin: () => (options?.isSuperAdmin ?? true) } },
+        { provide: MeService, useValue: { isSuperAdmin: () => options?.isSuperAdmin ?? true } },
       ],
     })
     const fixture = TestBed.createComponent(UsersList)
@@ -36,7 +50,11 @@ describe('UsersList', () => {
     return { fixture, httpMock }
   }
 
-  function flushInitialLoad(httpMock: HttpTestingController, users: unknown[] = [PUBLIC_USER], organizations: unknown[] = [PUBLIC_ORG, ACME_ORG]) {
+  function flushInitialLoad(
+    httpMock: HttpTestingController,
+    users: unknown[] = [PUBLIC_USER],
+    organizations: unknown[] = [PUBLIC_ORG, ACME_ORG],
+  ) {
     httpMock.expectOne('/api/users').flush(users)
     httpMock.expectOne('/api/organizations').flush(organizations)
   }
@@ -136,7 +154,9 @@ describe('UsersList', () => {
     fixture.componentInstance.selectedOrganizationId.set('ALL')
     fixture.detectChanges()
 
-    const organizationColumn = fixture.componentInstance.columns().find((c) => c.key === 'organization_id')
+    const organizationColumn = fixture.componentInstance
+      .columns()
+      .find((c) => c.key === 'organization_id')
     expect(organizationColumn?.format?.(ACME_USER)).toBe('Acme Corp')
   })
 
@@ -165,7 +185,7 @@ describe('UsersList', () => {
   })
 
   describe('as an organization admin', () => {
-    it('loads only its own organization\'s users, with a single request and no /api/organizations call', () => {
+    it("loads only its own organization's users, with a single request and no /api/organizations call", () => {
       const { fixture, httpMock } = setup({ isSuperAdmin: false })
 
       fixture.detectChanges()
@@ -189,7 +209,7 @@ describe('UsersList', () => {
       expect(fixture.componentInstance.columns().map((c) => c.key)).not.toContain('organization_id')
     })
 
-    it('navigates to the user detail page on row click, same as a super-admin — an organization admin has the same rights over their own organization\'s users', () => {
+    it("navigates to the user detail page on row click, same as a super-admin — an organization admin has the same rights over their own organization's users", () => {
       const { fixture, httpMock } = setup({ isSuperAdmin: false })
       const router = TestBed.inject(Router)
       vi.spyOn(router, 'navigate')

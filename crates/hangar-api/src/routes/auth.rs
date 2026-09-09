@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use axum::extract::rejection::ExtensionRejection;
 use axum::extract::{ConnectInfo, State};
 use axum::http::StatusCode;
 use axum::routing::{get, post};
@@ -40,8 +41,11 @@ pub fn router() -> Router<AppState> {
 }
 
 /// "unknown" if connect info wasn't attached; behind a reverse proxy this is the proxy's IP, not the client's.
-fn peer_ip(connect_info: Option<ConnectInfo<SocketAddr>>) -> String {
-    connect_info.map_or_else(|| "unknown".to_string(), |ConnectInfo(addr)| addr.ip().to_string())
+///
+/// `Result`, not `Option` — axum 0.8 only extracts `Option<T>` for extractors that opt into
+/// `OptionalFromRequestParts`, which `ConnectInfo` doesn't; `Result<T, T::Rejection>` still has the blanket impl.
+fn peer_ip(connect_info: Result<ConnectInfo<SocketAddr>, ExtensionRejection>) -> String {
+    connect_info.map_or_else(|_| "unknown".to_string(), |ConnectInfo(addr)| addr.ip().to_string())
 }
 
 /// Exposed separately, not just OR'd together, so the login page's verify step can show only the factor(s) that actually exist.
@@ -101,7 +105,7 @@ pub(crate) async fn throttle_limits_for_user_id(state: &AppState, user_id: uuid:
 
 async fn login(
     State(state): State<AppState>,
-    connect_info: Option<ConnectInfo<SocketAddr>>,
+    connect_info: Result<ConnectInfo<SocketAddr>, ExtensionRejection>,
     Json(body): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, (StatusCode, Json<ErrorResponse>)> {
     let (max_attempts, window) = throttle_limits_for_username(&state, &body.username).await;
@@ -147,7 +151,7 @@ async fn login(
 async fn register(
     State(state): State<AppState>,
     resolved_org: ResolvedOrganization,
-    connect_info: Option<ConnectInfo<SocketAddr>>,
+    connect_info: Result<ConnectInfo<SocketAddr>, ExtensionRejection>,
     Json(body): Json<RegisterRequest>,
 ) -> Result<Json<LoginResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Counts every attempt, not just failures like `login` — a registration flood costs server work regardless of outcome.
@@ -608,7 +612,7 @@ async fn me(user: AuthUser) -> Json<MeResponse> {
 async fn change_password(
     State(state): State<AppState>,
     user: AuthUser,
-    connect_info: Option<ConnectInfo<SocketAddr>>,
+    connect_info: Result<ConnectInfo<SocketAddr>, ExtensionRejection>,
     Json(body): Json<ChangePasswordRequest>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
     let (max_attempts, window) = throttle_limits_for_organization(&state, user.organization_id).await;

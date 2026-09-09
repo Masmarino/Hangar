@@ -25,9 +25,25 @@ describe('HttpOrganizationMembersAdapter', () => {
 
     const request = httpMock.expectOne('/api/organizations/org-1/users')
     expect(request.request.method).toBe('GET')
-    request.flush([{ id: 'user-1', username: 'florian', email: 'florian@example.com', is_organization_admin: false, invitation_pending: true }])
+    request.flush([
+      {
+        id: 'user-1',
+        username: 'florian',
+        email: 'florian@example.com',
+        is_organization_admin: false,
+        invitation_pending: true,
+      },
+    ])
 
-    expect(result).toEqual([{ id: 'user-1', username: 'florian', email: 'florian@example.com', is_organization_admin: false, invitation_pending: true }])
+    expect(result).toEqual([
+      {
+        id: 'user-1',
+        username: 'florian',
+        email: 'florian@example.com',
+        is_organization_admin: false,
+        invitation_pending: true,
+      },
+    ])
   })
 
   it('invites a new member into an organization', () => {
@@ -35,8 +51,18 @@ describe('HttpOrganizationMembersAdapter', () => {
 
     const request = httpMock.expectOne('/api/organizations/org-1/users')
     expect(request.request.method).toBe('POST')
-    expect(request.request.body).toEqual({ username: 'florian', email: 'florian@example.com', is_organization_admin: true })
-    request.flush({ id: 'user-1', username: 'florian', email: 'florian@example.com', is_organization_admin: true, invitation_pending: true })
+    expect(request.request.body).toEqual({
+      username: 'florian',
+      email: 'florian@example.com',
+      is_organization_admin: true,
+    })
+    request.flush({
+      id: 'user-1',
+      username: 'florian',
+      email: 'florian@example.com',
+      is_organization_admin: true,
+      invitation_pending: true,
+    })
   })
 
   it("sets a member's organization-admin status", () => {

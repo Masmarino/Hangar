@@ -238,7 +238,7 @@ describe('SecurityLog', () => {
 
   it('downloads a CSV of the currently loaded rows', () => {
     const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock')
-    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
     const fixture = render([
       {
         aggregate_type: 'Security',
@@ -282,9 +282,15 @@ describe('SecurityLog', () => {
       const httpMock = TestBed.inject(HttpTestingController)
       fixture.detectChanges()
       httpMock.expectOne((r) => r.url === '/api/audit/events').flush(entries)
-      httpMock
-        .expectOne('/api/organizations/org-1/users')
-        .flush([{ id: 'user-1', username: 'florian', email: null, is_organization_admin: true, invitation_pending: false }])
+      httpMock.expectOne('/api/organizations/org-1/users').flush([
+        {
+          id: 'user-1',
+          username: 'florian',
+          email: null,
+          is_organization_admin: true,
+          invitation_pending: false,
+        },
+      ])
       httpMock.expectOne('/api/repositories').flush([])
       fixture.detectChanges()
       return { fixture, httpMock }

@@ -1,4 +1,4 @@
-use argon2::password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
+use argon2::password_hash::{phc::PasswordHash, PasswordHasher, PasswordVerifier};
 use argon2::Argon2;
 use async_trait::async_trait;
 use hangar_domain::error::DomainError;
@@ -12,12 +12,9 @@ pub struct Argon2PasswordHasher;
 impl PasswordHasherPort for Argon2PasswordHasher {
     async fn hash(&self, plain_password: &str) -> Result<String, DomainError> {
         let plain_password = plain_password.to_string();
-        tokio::task::spawn_blocking(move || {
-            let salt = SaltString::generate(&mut OsRng);
-            Argon2::default().hash_password(plain_password.as_bytes(), &salt).map(|hash| hash.to_string()).infra_err()
-        })
-        .await
-        .map_err(|e| DomainError::Infrastructure(format!("password hashing task panicked: {e}")))?
+        tokio::task::spawn_blocking(move || Argon2::default().hash_password(plain_password.as_bytes()).map(|hash| hash.to_string()).infra_err())
+            .await
+            .map_err(|e| DomainError::Infrastructure(format!("password hashing task panicked: {e}")))?
     }
 
     async fn verify(&self, plain_password: &str, hash: &str) -> bool {

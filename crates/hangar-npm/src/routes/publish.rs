@@ -19,7 +19,7 @@ use crate::organization_resolution::ResolvedOrganization;
 use crate::state::NpmState;
 
 pub fn router() -> Router<NpmState> {
-    Router::new().route("/:repository/:package", put(publish))
+    Router::new().route("/{repository}/{package}", put(publish))
 }
 
 #[derive(Deserialize)]

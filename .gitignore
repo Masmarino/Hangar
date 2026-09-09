@@ -6,3 +6,5 @@ dist/
 .angular/
 .idea/
 .worktrees/
+.superpowers/
+/docs/

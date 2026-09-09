@@ -19,7 +19,13 @@ describe('AuthService', () => {
   it('stores the token and flips isAuthenticated on a login without mfa', () => {
     const service = setup({
       login: () =>
-        of({ token: 'a-jwt-token', mfa_token: null, mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: false }),
+        of({
+          token: 'a-jwt-token',
+          mfa_token: null,
+          mfa_setup_required: false,
+          mfa_has_totp: false,
+          mfa_has_passkey: false,
+        }),
     })
 
     expect(service.isAuthenticated()).toBe(false)
@@ -61,7 +67,13 @@ describe('AuthService', () => {
   it('stores the session token returned by verifyMfa', () => {
     const service = setup({
       verifyMfa: () =>
-        of({ token: 'a-jwt-token', mfa_token: null, mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: false }),
+        of({
+          token: 'a-jwt-token',
+          mfa_token: null,
+          mfa_setup_required: false,
+          mfa_has_totp: false,
+          mfa_has_passkey: false,
+        }),
     })
 
     service.verifyMfa('pending-token', '123456').subscribe()
@@ -73,7 +85,13 @@ describe('AuthService', () => {
   it('clears the token on logout', () => {
     const service = setup({
       login: () =>
-        of({ token: 'a-jwt-token', mfa_token: null, mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: false }),
+        of({
+          token: 'a-jwt-token',
+          mfa_token: null,
+          mfa_setup_required: false,
+          mfa_has_totp: false,
+          mfa_has_passkey: false,
+        }),
     })
     service.login('florian', 's3cret!').subscribe()
 

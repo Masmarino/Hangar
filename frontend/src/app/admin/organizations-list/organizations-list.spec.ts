@@ -14,14 +14,16 @@ describe('OrganizationsList', () => {
     vi.restoreAllMocks()
   })
 
-  function setup(organizations: { id: string; slug: string; display_name: string; is_public: boolean }[]) {
+  function setup(
+    organizations: { id: string; slug: string; display_name: string; is_public: boolean }[],
+  ) {
     TestBed.configureTestingModule({
       imports: [OrganizationsList],
       providers: [
         provideRouter([]),
         {
           provide: OrganizationsService,
-          useValue: { list: (_options?: unknown) => of(organizations) },
+          useValue: { list: () => of(organizations) },
         },
       ],
     })
@@ -33,7 +35,9 @@ describe('OrganizationsList', () => {
 
   it('loads organizations on init', () => {
     setup([{ id: '1', slug: 'acme', display_name: 'Acme', is_public: false }])
-    expect(component.organizations()).toEqual([{ id: '1', slug: 'acme', display_name: 'Acme', is_public: false }])
+    expect(component.organizations()).toEqual([
+      { id: '1', slug: 'acme', display_name: 'Acme', is_public: false },
+    ])
   })
 
   it('navigates to the organization detail page on row click', () => {

@@ -26,7 +26,9 @@ describe('LoginPage', () => {
   // ngOnInit fires GET /api/auth/sso/config on every component creation — flush it with
   // `{ type: null }` (local login) unless a test wants to exercise the LDAP or OIDC path.
   function flushSsoConfig(type: 'ldap' | 'oidc' | null = null, registrationEnabled = true): void {
-    httpMock.expectOne('/api/auth/sso/config').flush({ type, registration_enabled: registrationEnabled })
+    httpMock
+      .expectOne('/api/auth/sso/config')
+      .flush({ type, registration_enabled: registrationEnabled })
   }
 
   afterEach(() => {
@@ -89,7 +91,13 @@ describe('LoginPage', () => {
     const req = httpMock.expectOne('/api/auth/sso/ldap')
     expect(req.request.method).toBe('POST')
     expect(req.request.body).toEqual({ username: 'florian', password: 's3cret!' })
-    req.flush({ token: 'a-jwt-token', mfa_token: null, mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: false })
+    req.flush({
+      token: 'a-jwt-token',
+      mfa_token: null,
+      mfa_setup_required: false,
+      mfa_has_totp: false,
+      mfa_has_passkey: false,
+    })
   })
 
   it('shows the OIDC redirect link when the organization uses OIDC', () => {
@@ -114,7 +122,13 @@ describe('LoginPage', () => {
 
     component.submit()
 
-    httpMock.expectOne('/api/auth/login').flush({ token: null, mfa_token: 'pending-token', mfa_setup_required: false, mfa_has_totp: true, mfa_has_passkey: false })
+    httpMock.expectOne('/api/auth/login').flush({
+      token: null,
+      mfa_token: 'pending-token',
+      mfa_setup_required: false,
+      mfa_has_totp: true,
+      mfa_has_passkey: false,
+    })
     fixture.detectChanges()
 
     expect(component.mfaToken()).toBe('pending-token')
@@ -135,7 +149,13 @@ describe('LoginPage', () => {
     flushSsoConfig()
     fixture.componentInstance.form.setValue({ username: 'florian', password: 's3cret!' })
     fixture.componentInstance.submit()
-    httpMock.expectOne('/api/auth/login').flush({ token: null, mfa_token: 'pending-token', mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: true })
+    httpMock.expectOne('/api/auth/login').flush({
+      token: null,
+      mfa_token: 'pending-token',
+      mfa_setup_required: false,
+      mfa_has_totp: false,
+      mfa_has_passkey: true,
+    })
     fixture.detectChanges()
 
     expect(fixture.nativeElement.textContent).not.toContain('Code de vérification')
@@ -148,7 +168,13 @@ describe('LoginPage', () => {
     flushSsoConfig()
     fixture.componentInstance.form.setValue({ username: 'florian', password: 's3cret!' })
     fixture.componentInstance.submit()
-    httpMock.expectOne('/api/auth/login').flush({ token: null, mfa_token: 'pending-token', mfa_setup_required: false, mfa_has_totp: true, mfa_has_passkey: false })
+    httpMock.expectOne('/api/auth/login').flush({
+      token: null,
+      mfa_token: 'pending-token',
+      mfa_setup_required: false,
+      mfa_has_totp: true,
+      mfa_has_passkey: false,
+    })
     fixture.detectChanges()
 
     expect(fixture.nativeElement.textContent).toContain('Code de vérification')
@@ -164,7 +190,13 @@ describe('LoginPage', () => {
     flushSsoConfig()
     component.form.setValue({ username: 'florian', password: 's3cret!' })
     component.submit()
-    httpMock.expectOne('/api/auth/login').flush({ token: null, mfa_token: 'pending-token', mfa_setup_required: false, mfa_has_totp: true, mfa_has_passkey: false })
+    httpMock.expectOne('/api/auth/login').flush({
+      token: null,
+      mfa_token: 'pending-token',
+      mfa_setup_required: false,
+      mfa_has_totp: true,
+      mfa_has_passkey: false,
+    })
     fixture.detectChanges()
 
     component.mfaForm.setValue({ code: '123456' })
@@ -176,7 +208,13 @@ describe('LoginPage', () => {
       code: '123456',
       backup_code: undefined,
     })
-    req.flush({ token: 'a-jwt-token', mfa_token: null, mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: false })
+    req.flush({
+      token: 'a-jwt-token',
+      mfa_token: null,
+      mfa_setup_required: false,
+      mfa_has_totp: false,
+      mfa_has_passkey: false,
+    })
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/')
   })
@@ -188,7 +226,13 @@ describe('LoginPage', () => {
     flushSsoConfig()
     component.form.setValue({ username: 'florian', password: 's3cret!' })
     component.submit()
-    httpMock.expectOne('/api/auth/login').flush({ token: null, mfa_token: 'pending-token', mfa_setup_required: false, mfa_has_totp: true, mfa_has_passkey: false })
+    httpMock.expectOne('/api/auth/login').flush({
+      token: null,
+      mfa_token: 'pending-token',
+      mfa_setup_required: false,
+      mfa_has_totp: true,
+      mfa_has_passkey: false,
+    })
     fixture.detectChanges()
 
     component.toggleBackupCode()
@@ -201,7 +245,13 @@ describe('LoginPage', () => {
       code: undefined,
       backup_code: 'abc123',
     })
-    req.flush({ token: 'a-jwt-token', mfa_token: null, mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: false })
+    req.flush({
+      token: 'a-jwt-token',
+      mfa_token: null,
+      mfa_setup_required: false,
+      mfa_has_totp: false,
+      mfa_has_passkey: false,
+    })
   })
 
   it('shows an error message when the mfa code is rejected', () => {
@@ -211,7 +261,13 @@ describe('LoginPage', () => {
     flushSsoConfig()
     component.form.setValue({ username: 'florian', password: 's3cret!' })
     component.submit()
-    httpMock.expectOne('/api/auth/login').flush({ token: null, mfa_token: 'pending-token', mfa_setup_required: false, mfa_has_totp: true, mfa_has_passkey: false })
+    httpMock.expectOne('/api/auth/login').flush({
+      token: null,
+      mfa_token: 'pending-token',
+      mfa_setup_required: false,
+      mfa_has_totp: true,
+      mfa_has_passkey: false,
+    })
     fixture.detectChanges()
 
     component.mfaForm.setValue({ code: '000000' })
@@ -250,7 +306,13 @@ describe('LoginPage', () => {
     flushSsoConfig()
     component.form.setValue({ username: 'florian', password: 's3cret!' })
     component.submit()
-    httpMock.expectOne('/api/auth/login').flush({ token: null, mfa_token: 'pending-token', mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: true })
+    httpMock.expectOne('/api/auth/login').flush({
+      token: null,
+      mfa_token: 'pending-token',
+      mfa_setup_required: false,
+      mfa_has_totp: false,
+      mfa_has_passkey: true,
+    })
     fixture.detectChanges()
 
     const loginPromise = component.submitPasskey()
@@ -271,7 +333,13 @@ describe('LoginPage', () => {
     const finishReq = httpMock.expectOne('/api/auth/mfa/passkey/finish')
     expect(finishReq.request.body.mfa_token).toBe('pending-token')
     expect(finishReq.request.body.challenge_id).toBe('challenge-1')
-    finishReq.flush({ token: 'a-jwt-token', mfa_token: null, mfa_setup_required: false, mfa_has_totp: false, mfa_has_passkey: false })
+    finishReq.flush({
+      token: 'a-jwt-token',
+      mfa_token: null,
+      mfa_setup_required: false,
+      mfa_has_totp: false,
+      mfa_has_passkey: false,
+    })
     await loginPromise
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/')
@@ -287,9 +355,13 @@ describe('LoginPage', () => {
     component.form.setValue({ username: 'florian', password: 's3cret!' })
 
     component.submit()
-    httpMock
-      .expectOne('/api/auth/login')
-      .flush({ token: null, mfa_token: 'pending-token', mfa_setup_required: true, mfa_has_totp: false, mfa_has_passkey: false })
+    httpMock.expectOne('/api/auth/login').flush({
+      token: null,
+      mfa_token: 'pending-token',
+      mfa_setup_required: true,
+      mfa_has_totp: false,
+      mfa_has_passkey: false,
+    })
     fixture.detectChanges()
 
     expect(component.mfaSetupRequired()).toBe(true)

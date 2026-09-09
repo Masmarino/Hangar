@@ -15,7 +15,7 @@ use crate::organization_resolution::ResolvedOrganization;
 use crate::state::NpmState;
 
 pub fn router() -> Router<NpmState> {
-    Router::new().route("/:repository/-/npm/v1/security/advisories/bulk", post(bulk_advisories))
+    Router::new().route("/{repository}/-/npm/v1/security/advisories/bulk", post(bulk_advisories))
 }
 
 /// Real `npm audit`'s own endpoint — forwards straight to npm's advisory database rather than looking anything up locally.

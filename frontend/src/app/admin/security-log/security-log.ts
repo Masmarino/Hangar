@@ -115,12 +115,16 @@ export class SecurityLog implements OnInit {
     if (organizationId) {
       this.organizationMembersService
         .list(organizationId)
-        .subscribe((members) => this.usernamesById.set(new Map(members.map((m) => [m.id, m.username]))))
+        .subscribe((members) =>
+          this.usernamesById.set(new Map(members.map((m) => [m.id, m.username]))),
+        )
     } else {
       this.usersService
         .list()
         .subscribe((users) => this.usernamesById.set(new Map(users.map((u) => [u.id, u.username]))))
-      this.auditService.blockedAccounts().subscribe((accounts) => this.blockedAccounts.set(accounts))
+      this.auditService
+        .blockedAccounts()
+        .subscribe((accounts) => this.blockedAccounts.set(accounts))
     }
     this.repositoriesService
       .list()

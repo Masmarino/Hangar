@@ -89,7 +89,9 @@ export class AppShell implements OnInit {
   readonly searchQuery = signal('')
 
   // Whoever can reach /users (STAFF_ONLY_ACTIONS) can also search it.
-  private readonly canSeeUsers = computed(() => this.me.isSuperAdmin() || this.me.isOrganizationAdmin())
+  private readonly canSeeUsers = computed(
+    () => this.me.isSuperAdmin() || this.me.isOrganizationAdmin(),
+  )
 
   readonly searchResults = computed<SearchResultCategory<SearchResult>[]>(() => {
     const query = this.searchQuery().trim().toLowerCase()
@@ -268,7 +270,10 @@ export class AppShell implements OnInit {
   }
 
   toggleMenu(item: NavItem): void {
-    this.menuManualOverrides.update((overrides) => ({ ...overrides, [item.action]: !this.isMenuOpen(item) }))
+    this.menuManualOverrides.update((overrides) => ({
+      ...overrides,
+      [item.action]: !this.isMenuOpen(item),
+    }))
   }
 
   @HostListener('document:click', ['$event'])

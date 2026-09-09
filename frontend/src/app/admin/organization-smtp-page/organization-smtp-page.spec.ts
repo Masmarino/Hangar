@@ -25,7 +25,11 @@ describe('OrganizationSmtpPage', () => {
         },
         {
           provide: SmtpSettingsService,
-          useValue: { get: () => of(null), update: () => of(undefined), sendTestEmail: () => of(undefined) },
+          useValue: {
+            get: () => of(null),
+            update: () => of(undefined),
+            sendTestEmail: () => of(undefined),
+          },
         },
       ],
     })

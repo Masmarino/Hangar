@@ -11,9 +11,12 @@ function render() {
   const fixture = TestBed.createComponent(SystemSettingsAdmin)
   const httpMock = TestBed.inject(HttpTestingController)
   fixture.detectChanges()
-  httpMock
-    .expectOne('/api/admin/settings')
-    .flush({ max_login_attempts: 10, login_attempt_window_seconds: 300, session_ttl_hours: 12, registration_enabled: true })
+  httpMock.expectOne('/api/admin/settings').flush({
+    max_login_attempts: 10,
+    login_attempt_window_seconds: 300,
+    session_ttl_hours: 12,
+    registration_enabled: true,
+  })
   fixture.detectChanges()
   return { fixture, httpMock }
 }

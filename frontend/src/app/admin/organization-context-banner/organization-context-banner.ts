@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, booleanAttribute, inject, input, signal } from '@angular/core'
+import {
+  ChangeDetectionStrategy,
+  Component,
+  booleanAttribute,
+  inject,
+  input,
+  signal,
+} from '@angular/core'
 import { ActivatedRoute } from '@angular/router'
 import { Card } from '@masmarino/gabarit'
 import { OrganizationsService } from '../application/organizations.service'

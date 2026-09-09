@@ -12,7 +12,12 @@ export class HttpOrganizationMembersAdapter implements OrganizationMembersPort {
     return this.http.get<OrganizationMember[]>(`/api/organizations/${organizationId}/users`)
   }
 
-  invite(organizationId: string, username: string, email: string, isOrganizationAdmin: boolean): Observable<OrganizationMember> {
+  invite(
+    organizationId: string,
+    username: string,
+    email: string,
+    isOrganizationAdmin: boolean,
+  ): Observable<OrganizationMember> {
     return this.http.post<OrganizationMember>(`/api/organizations/${organizationId}/users`, {
       username,
       email,
@@ -20,9 +25,16 @@ export class HttpOrganizationMembersAdapter implements OrganizationMembersPort {
     })
   }
 
-  setOrganizationAdmin(organizationId: string, userId: string, isOrganizationAdmin: boolean): Observable<void> {
-    return this.http.put<void>(`/api/organizations/${organizationId}/users/${userId}/organization-admin`, {
-      is_organization_admin: isOrganizationAdmin,
-    })
+  setOrganizationAdmin(
+    organizationId: string,
+    userId: string,
+    isOrganizationAdmin: boolean,
+  ): Observable<void> {
+    return this.http.put<void>(
+      `/api/organizations/${organizationId}/users/${userId}/organization-admin`,
+      {
+        is_organization_admin: isOrganizationAdmin,
+      },
+    )
   }
 }

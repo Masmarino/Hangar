@@ -18,16 +18,24 @@ describe('HttpSystemSettingsAdapter', () => {
     const { adapter, httpMock } = setup()
 
     adapter.get().subscribe((settings) => expect(settings.max_login_attempts).toBe(10))
-    httpMock
-      .expectOne('/api/admin/settings')
-      .flush({ max_login_attempts: 10, login_attempt_window_seconds: 300, session_ttl_hours: 12, registration_enabled: true })
+    httpMock.expectOne('/api/admin/settings').flush({
+      max_login_attempts: 10,
+      login_attempt_window_seconds: 300,
+      session_ttl_hours: 12,
+      registration_enabled: true,
+    })
   })
 
   it('sends an update as a PUT request', () => {
     const { adapter, httpMock } = setup()
 
     adapter
-      .update({ max_login_attempts: 5, login_attempt_window_seconds: 60, session_ttl_hours: 1, registration_enabled: false })
+      .update({
+        max_login_attempts: 5,
+        login_attempt_window_seconds: 60,
+        session_ttl_hours: 1,
+        registration_enabled: false,
+      })
       .subscribe()
     const req = httpMock.expectOne('/api/admin/settings')
     expect(req.request.method).toBe('PUT')

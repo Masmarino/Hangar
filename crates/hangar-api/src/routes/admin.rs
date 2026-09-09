@@ -29,7 +29,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/admin/stats", get(get_stats))
         .route("/api/admin/security/blocked", get(list_blocked_usernames))
         .route("/api/admin/tokens", get(list_all_api_tokens))
-        .route("/api/admin/tokens/:id", axum::routing::delete(admin_revoke_api_token))
+        .route("/api/admin/tokens/{id}", axum::routing::delete(admin_revoke_api_token))
         .route("/api/admin/settings", get(get_system_settings).put(update_system_settings))
         .route("/api/admin/settings/smtp", get(get_smtp_settings).put(update_smtp_settings))
         .route("/api/admin/settings/smtp/test", axum::routing::post(send_test_email))

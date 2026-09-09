@@ -13,11 +13,11 @@ use crate::state::AppState;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/api/organizations", post(create_organization).get(list_organizations))
-        .route("/api/organizations/:id", get(get_organization))
-        .route("/api/organizations/:id/users", get(list_organization_members).post(invite_organization_member))
-        .route("/api/organizations/:id/users/:user_id/organization-admin", axum::routing::put(set_organization_member_admin))
+        .route("/api/organizations/{id}", get(get_organization))
+        .route("/api/organizations/{id}/users", get(list_organization_members).post(invite_organization_member))
+        .route("/api/organizations/{id}/users/{user_id}/organization-admin", axum::routing::put(set_organization_member_admin))
         .route(
-            "/api/organizations/:id/identity-provider",
+            "/api/organizations/{id}/identity-provider",
             get(get_identity_provider).put(set_identity_provider).delete(clear_identity_provider),
         )
 }

@@ -14,7 +14,7 @@ use crate::organization_resolution::ResolvedOrganization;
 use crate::state::NpmState;
 
 pub fn router() -> Router<NpmState> {
-    Router::new().route("/:repository/-/v1/search", get(search))
+    Router::new().route("/{repository}/-/v1/search", get(search))
 }
 
 #[derive(Deserialize)]
