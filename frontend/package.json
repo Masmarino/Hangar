@@ -18,7 +18,7 @@
     "@angular/core": "^22.1.0",
     "@angular/forms": "^22.1.0",
     "@angular/platform-browser": "^22.1.0",
-    "@angular/router": "^22.1.0",
+    "@angular/router": "^22.1.5",
     "@jsverse/transloco": "^8.4.0",
     "@masmarino/gabarit": "^0.1.2",
     "qrcode": "^1.5.4",
