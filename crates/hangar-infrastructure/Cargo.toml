@@ -14,7 +14,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "migrate", "macros", "json"] }
 argon2 = "0.5"
-jsonwebtoken = "9"
+jsonwebtoken = "11"
 tokio = { version = "1", features = ["fs", "rt", "process"] }
 reqwest = { version = "0.13.4", features = ["json", "query", "stream"] }
 libc = "0.2"
