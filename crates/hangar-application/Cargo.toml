@@ -7,7 +7,7 @@ edition.workspace = true
 hangar-domain = { path = "../hangar-domain" }
 async-trait = "0.1"
 futures = "0.3"
-thiserror = "1"
+thiserror = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 sha1 = "0.11.0"
