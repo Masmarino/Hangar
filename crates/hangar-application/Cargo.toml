@@ -26,4 +26,4 @@ tracing = "0.1"
 
 [dev-dependencies]
 hangar-infrastructure = { path = "../hangar-infrastructure" }
-sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "migrate", "macros", "json"] }
+sqlx = { version = "0.9", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "migrate", "macros", "json"] }

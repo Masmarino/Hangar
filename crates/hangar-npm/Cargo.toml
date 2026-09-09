@@ -22,5 +22,5 @@ base64 = "0.23.1"
 
 [dev-dependencies]
 tower = { version = "0.4", features = ["util"] }
-sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "migrate"] }
+sqlx = { version = "0.9", features = ["runtime-tokio", "tls-rustls", "postgres", "migrate"] }
 tempfile = "3"
