@@ -14,7 +14,7 @@ axum-extra = { version = "0.12", features = ["typed-header", "cookie"] }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 futures = "0.3"
-tower-http = { version = "0.6", features = ["cors", "trace", "fs", "compression-full", "set-header"] }
+tower-http = { version = "0.7", features = ["cors", "trace", "fs", "compression-full", "set-header"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tracing = "0.1"
