@@ -45,7 +45,8 @@ WORKDIR /app
 ARG TARGETARCH
 ARG TRIVY_VERSION=0.74.0
 
-RUN apk add --no-cache ca-certificates curl \
+RUN apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates curl \
     && TRIVY_ARCH=$(if [ "$TARGETARCH" = "arm64" ]; then echo ARM64; else echo 64bit; fi) \
     && TRIVY_TARBALL="trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz" \
     && curl -sfL -o "/tmp/${TRIVY_TARBALL}" "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/${TRIVY_TARBALL}" \

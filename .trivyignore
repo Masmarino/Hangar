@@ -1,0 +1,14 @@
+# All found in the vendored `trivy` binary itself (see Dockerfile, runtime stage — Hangar
+# bundles Trivy to scan images pushed to it). Fixes exist upstream but aquasecurity hasn't cut
+# a new Trivy release with the bumped dependencies yet, at v0.74.0 (latest as of 2026-09-09).
+# Revisit when they do.
+
+# google.golang.org/grpc >=1.82.2/1.83.1
+CVE-2026-84303
+CVE-2026-84304
+CVE-2026-84445
+
+# golang.org/x/crypto >=0.56.0 — same 2 underlying issues as GO-2026-6354/6355 in .grype.yaml,
+# just CVE-numbered here; Trivy and Grype use different ID schemes for the same fix.
+CVE-2026-56855
+CVE-2026-78662

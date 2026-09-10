@@ -1,0 +1,19 @@
+ignore:
+  # All found in the vendored `trivy` binary itself (Dockerfile, runtime stage). Fixes exist
+  # upstream but aquasecurity hasn't released a new Trivy build with the bumped dependencies
+  # yet, at v0.74.0 (latest as of 2026-09-09). Revisit when aquasecurity catches up.
+  #
+  # grpc-go >=1.82.2/1.83.1 — same trio as .trivyignore (CVE-2026-84303/84304/84445); Grype IDs
+  # these by GHSA, not CVE, hence the different id here.
+  - vulnerability: GHSA-qc2q-p7wx-3px3 # CVE-2026-84303
+    reason: "fix not yet shipped in aquasecurity/trivy v0.74.0 (latest)"
+  - vulnerability: GHSA-vp52-pcj8-j9qc # CVE-2026-84304
+    reason: "fix not yet shipped in aquasecurity/trivy v0.74.0 (latest)"
+  - vulnerability: GHSA-2v4p-qf9q-27wj # CVE-2026-84445
+    reason: "fix not yet shipped in aquasecurity/trivy v0.74.0 (latest)"
+  # golang.org/x/crypto >=0.56.0 — not in .trivyignore because Trivy's own DB doesn't flag these
+  # on this binary at all (a Trivy detection gap, not a suppressed finding).
+  - vulnerability: GO-2026-6354
+    reason: "fix not yet shipped in aquasecurity/trivy v0.74.0 (latest)"
+  - vulnerability: GO-2026-6355
+    reason: "fix not yet shipped in aquasecurity/trivy v0.74.0 (latest)"
