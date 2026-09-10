@@ -1,0 +1,55 @@
+image:
+  repository: masmarino/hangar
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  port: 8080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 4Gi
+
+storage:
+  # Registry blob storage (Docker layers, npm tarballs) — grows with usage.
+  size: 20Gi
+  storageClassName: "" # empty = cluster default
+
+ingress:
+  enabled: true
+  host: hangar.skolln.com
+  clusterIssuer: hangar-issuer
+  # Per-organization subdomains (e.g. acme.hangar.skolln.com) need a wildcard cert, which
+  # needs a DNS-01 solver — this cluster's ClusterIssuers are all HTTP-01 only. Only `host`
+  # itself (the public org) is reachable over HTTPS until DNS-01 is set up.
+
+hangar:
+  baseDomain: hangar.skolln.com
+  bootstrapAdminUsername: admin
+  rustLog: info
+  # dockerTokenRealm defaults to https://<ingress.host>/v2/token — see _helpers.tpl
+
+postgres:
+  image: postgres:18-alpine3.24@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
+  storage:
+    size: 10Gi
+    storageClassName: "" # empty = cluster default
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+# Left empty, Helm generates each of these once on first install (see templates/secret.yaml)
+# and keeps them stable on every later `helm upgrade` — no need to supply them from CI.
+secrets:
+  postgresPassword: ""
+  jwtSecret: ""
+  secretsEncryptionKey: ""
+  bootstrapAdminPassword: ""

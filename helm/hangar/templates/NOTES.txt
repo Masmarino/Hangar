@@ -1,0 +1,20 @@
+Hangar is deploying to {{ .Release.Namespace }}.
+
+{{- if .Values.ingress.enabled }}
+Once the pod is ready and the ACME challenge completes (a minute or two), it'll be reachable at:
+  https://{{ .Values.ingress.host }}
+
+Check certificate issuance with:
+  kubectl get certificate -n {{ .Release.Namespace }}
+{{- end }}
+
+Per-organization subdomains (e.g. acme.{{ .Values.ingress.host }}) need a wildcard TLS
+certificate, which needs a DNS-01 ClusterIssuer — not set up yet, since this cluster's
+existing issuers are all HTTP-01. Only {{ .Values.ingress.host }} itself (the public
+organization) is reachable over HTTPS until that's added.
+
+Log in with:
+  username: {{ .Values.hangar.bootstrapAdminUsername }}
+  password: kubectl get secret {{ .Release.Name }}-secrets -n {{ .Release.Namespace }} -o jsonpath='{.data.HANGAR_BOOTSTRAP_ADMIN_PASSWORD}' | base64 -d
+(only works before the users table has its first row — the app ignores this value after that;
+change the password once logged in)

@@ -286,20 +286,21 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     environment: production
     steps:
-      - uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
 
       - name: Write kubeconfig
         run: |
           install -m 600 /dev/null "$RUNNER_TEMP/kubeconfig.yaml"
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > "$RUNNER_TEMP/kubeconfig.yaml"
 
-      - name: Patch the Deployment image
+      - name: helm upgrade --install
         env:
           KUBECONFIG: ${{ runner.temp }}/kubeconfig.yaml
-          IMAGE: ${{ env.DOCKER_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}
         run: |
-          kubectl set image "deployment/${{ vars.K8S_DEPLOYMENT }}" \
-            "${{ vars.K8S_CONTAINER }}=$IMAGE" \
-            -n "${{ vars.K8S_NAMESPACE }}"
-          kubectl rollout status "deployment/${{ vars.K8S_DEPLOYMENT }}" \
-            -n "${{ vars.K8S_NAMESPACE }}" --timeout=5m
+          helm upgrade --install hangar ./helm/hangar \
+            --namespace hangar --create-namespace \
+            --set image.repository="${{ env.DOCKER_IMAGE }}" \
+            --set image.tag="${{ needs.build-and-push.outputs.image_tag }}" \
+            --wait --timeout 5m
