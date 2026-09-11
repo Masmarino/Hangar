@@ -135,6 +135,7 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
           ignore-unfixed: true
+          limit-severities-for-sarif: true
 
       - name: Upload Trivy SARIF
         if: always()
@@ -227,6 +228,7 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
           ignore-unfixed: true
+          limit-severities-for-sarif: true
 
       - name: Upload Trivy image SARIF
         if: always()
