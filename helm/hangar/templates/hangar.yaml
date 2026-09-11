@@ -64,6 +64,8 @@ spec:
               value: {{ .Values.hangar.baseDomain | quote }}
             - name: HANGAR_DOCKER_TOKEN_REALM
               value: {{ include "hangar.dockerTokenRealm" . | quote }}
+            - name: PUBLIC_URL
+              value: {{ include "hangar.publicUrl" . | quote }}
             - name: STORAGE_ROOT
               value: /data
             - name: BIND_ADDR

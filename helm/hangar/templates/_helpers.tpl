@@ -12,3 +12,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "hangar.dockerTokenRealm" -}}
 https://{{ .Values.ingress.host }}/v2/token
 {{- end -}}
+
+{{- define "hangar.publicUrl" -}}
+https://{{ .Values.ingress.host }}
+{{- end -}}
