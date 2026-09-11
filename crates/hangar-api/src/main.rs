@@ -169,7 +169,7 @@ fn with_security_headers(router: Router, hsts_enabled: bool) -> Router {
             header::CONTENT_SECURITY_POLICY,
             // style-src needs 'unsafe-inline' — Angular injects per-component <style> tags, no CSP nonces.
             HeaderValue::from_static(
-                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
             ),
         ));
     if hsts_enabled {
