@@ -1,4 +1,4 @@
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::routing::{get, post, put};
 use axum::{Json, Router};
@@ -109,6 +109,16 @@ async fn list_repositories(
     Ok(Json(visible))
 }
 
+/// A super-admin can target any org via `organization_id`; anyone else always gets their own.
+#[derive(Deserialize)]
+struct OrgScopeParams {
+    organization_id: Option<Uuid>,
+}
+
+fn target_organization_id(user: &AuthUser, resolved_org: &ResolvedOrganization, requested: Option<Uuid>) -> Uuid {
+    if user.is_super_admin { requested.unwrap_or(resolved_org.0.id) } else { user.organization_id }
+}
+
 #[derive(Deserialize)]
 struct CreateRepositoryRequest {
     name: String,
@@ -135,9 +145,10 @@ async fn create_repository(
     State(state): State<AppState>,
     user: AuthUser,
     resolved_org: ResolvedOrganization,
+    Query(scope): Query<OrgScopeParams>,
     Json(body): Json<CreateRepositoryRequest>,
 ) -> Result<(StatusCode, Json<RepositoryResponse>), (StatusCode, Json<ErrorResponse>)> {
-    // A super-admin may create a repository in any org; otherwise the caller must be an admin of the org resolved from this request's subdomain.
+    // Non-super-admins must be an admin of the org their own subdomain resolves to.
     if !user.is_super_admin {
         require_same_organization(&user, resolved_org.0.id)
             .map_err(|status| (status, Json(ErrorResponse { error: "not found".to_string() })))?;
@@ -145,6 +156,7 @@ async fn create_repository(
             return Err((StatusCode::FORBIDDEN, Json(ErrorResponse { error: "forbidden".to_string() })));
         }
     }
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
     let group_members = body.group_members.unwrap_or_default();
 
     // Validate every member up front, before creating anything.
@@ -168,7 +180,7 @@ async fn create_repository(
                     )
                 })?;
             // Checked up front so a cross-org member is rejected before the repository is created, not after.
-            if member.organization_id != resolved_org.0.id {
+            if member.organization_id != organization_id {
                 return Err(application_error_response(
                     "failed to create repository",
                     hangar_domain::error::DomainError::GroupMemberOrganizationMismatch(*member_id).into(),
@@ -186,7 +198,7 @@ async fn create_repository(
     let id = state
         .create_repository
         .execute(
-            resolved_org.0.id,
+            organization_id,
             &body.name,
             body.format,
             body.repo_type,
@@ -231,7 +243,7 @@ async fn create_repository(
 
 async fn get_repository(State(state): State<AppState>, user: AuthUser, Path(id): Path<Uuid>) -> Result<Json<RepositoryResponse>, StatusCode> {
     let repo = state.repositories.find_by_id(id).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?.ok_or(StatusCode::NOT_FOUND)?;
-    // Isolation check first, and must return 404 not a later 403 — otherwise a cross-org caller could tell a repository exists from the status code alone.
+    // 404 not 403 — a cross-org caller shouldn't learn the repo exists at all.
     require_same_organization(&user, repo.organization_id)?;
     require_repository_role(&state, &user, id, Role::Read, "view repository").await?;
     let my_role = effective_repository_role(&state, &user, id).await?.ok_or(StatusCode::FORBIDDEN)?;
@@ -1023,6 +1035,68 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), axum::http::StatusCode::CREATED);
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn a_super_admin_can_target_a_specific_organizations_repository_via_the_query_param(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        let token = bearer(&state, Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(), "admin", "sup3r-s3cret!", true).await;
+        let app = build_router(state.clone());
+
+        // No `host` header — this would otherwise resolve to the public organization.
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/repositories?organization_id={acme_id}"))
+                    .header("content-type", "application/json")
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::from(r#"{"name":"acme-repo","format":"npm","repo_type":"hosted","remote_url":null}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), axum::http::StatusCode::CREATED);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let created_id = Uuid::parse_str(json["id"].as_str().unwrap()).unwrap();
+        let created = state.repositories.find_by_id(created_id).await.unwrap().unwrap();
+        assert_eq!(created.organization_id, acme_id, "?organization_id= must target that organization, not whichever one the request's domain resolves to");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn an_organization_admin_cannot_use_the_organization_id_query_param_to_create_a_repository_in_another_organization(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        let other_id = state.create_organization.execute("other", "Other Corp").await.unwrap();
+        let org_admin_id = state.create_user.execute(acme_id, "org-admin", "sup3r-s3cret!", false).await.unwrap();
+        state.users.set_organization_admin(org_admin_id, true).await.unwrap();
+        let token = state.authenticate_user.execute("org-admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state.clone());
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/repositories?organization_id={other_id}"))
+                    .header("content-type", "application/json")
+                    .header("authorization", format!("Bearer {token}"))
+                    // organization_id doesn't override the domain for a non-super-admin.
+                    .header("host", "acme.hangar.localhost")
+                    .body(Body::from(r#"{"name":"escape-attempt","format":"npm","repo_type":"hosted","remote_url":null}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), axum::http::StatusCode::CREATED);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let created_id = Uuid::parse_str(json["id"].as_str().unwrap()).unwrap();
+        let created = state.repositories.find_by_id(created_id).await.unwrap().unwrap();
+        assert_eq!(created.organization_id, acme_id, "an organization admin must not be able to use ?organization_id= to escape their own organization");
     }
 
     #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
@@ -2248,7 +2322,7 @@ mod tests {
         assert_eq!(response.status(), axum::http::StatusCode::NOT_FOUND);
     }
 
-    /// One representative content route — the same `require_same_organization` call was added to all twelve.
+    /// Representative of all twelve content routes, which share the same org check.
     #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
     async fn npm_package_details_in_one_organization_is_not_reachable_by_a_member_of_another(pool: sqlx::PgPool) {
         use hangar_domain::npm_package::{NpmPackage, NpmPackageName, NpmPackageOrigin, NpmPackageVersion, NpmVersion};
@@ -2298,9 +2372,8 @@ mod tests {
         // Creating a repository doesn't itself grant the creator a role on it.
         state.grant_permission.execute(admin_id, repo_id, Role::Read, admin_id).await.unwrap();
 
-        // Grant while a super-admin (the only way a cross-org grant is allowed), then demote
-        // below — leaving a stale grant outside this user's own org. A second super-admin so
-        // demoting `other_user_id` below isn't rejected as removing the last one.
+        // Grant as super-admin (only way to cross orgs), then demote — leaves a stale
+        // out-of-org grant. A second super-admin so the demotion below isn't rejected.
         state.create_user.execute(Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(), "another-super-admin", "sup3r-s3cret!", true).await.unwrap();
         let other_user_id = state.create_user.execute(other_id, "other-user", "sup3r-s3cret!", true).await.unwrap();
         state.grant_permission.execute(other_user_id, repo_id, Role::Read, admin_id).await.unwrap();

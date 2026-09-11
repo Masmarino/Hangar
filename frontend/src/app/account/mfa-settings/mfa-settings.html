@@ -75,13 +75,15 @@
             [ngModel]="regeneratePassword()"
             (ngModelChange)="regeneratePassword.set($event)"
           />
-          <gbt-button
-            text="Régénérer les codes de secours"
-            variant="secondary"
-            [loading]="submitting()"
-            loadingLabel="Chargement en cours"
-            (clicked)="regenerateBackupCodes()"
-          />
+          <gbt-tooltip text="Les anciens codes de secours cesseront de fonctionner immédiatement.">
+            <gbt-button
+              text="Régénérer les codes de secours"
+              variant="secondary"
+              [loading]="submitting()"
+              loadingLabel="Chargement en cours"
+              (clicked)="regenerateBackupCodes()"
+            />
+          </gbt-tooltip>
         </div>
 
         <div class="mfa-settings__actions">
@@ -93,18 +95,16 @@
             [ngModel]="disablePassword()"
             (ngModelChange)="disablePassword.set($event)"
           />
-          <gbt-button
-            text="Désactiver la double authentification"
-            variant="danger"
-            [loading]="submitting()"
-            loadingLabel="Chargement en cours"
-            (clicked)="disable()"
-          />
+          <gbt-tooltip text="Le compte ne demandera plus de code à la connexion.">
+            <gbt-button
+              text="Désactiver la double authentification"
+              variant="danger"
+              [loading]="submitting()"
+              loadingLabel="Chargement en cours"
+              (clicked)="disable()"
+            />
+          </gbt-tooltip>
         </div>
-
-        @if (errorMessage(); as message) {
-          <p class="gbt-form-error" role="alert">{{ message }}</p>
-        }
       }
     }
   }

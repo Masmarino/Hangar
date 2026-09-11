@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http'
 import { SystemSettingsAdmin } from './system-settings'
 import { adminProviders } from '../infrastructure/admin.providers'
+import { ToastService } from '../../shared/toast.service'
 
 function render() {
   TestBed.configureTestingModule({
@@ -44,10 +45,14 @@ describe('SystemSettingsAdmin', () => {
       session_ttl_hours: 12,
       registration_enabled: true,
     })
+    const toastService = TestBed.inject(ToastService)
     req.flush(null)
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain('Paramètres enregistrés.')
+    expect(toastService.toasts().at(-1)).toMatchObject({
+      variant: 'success',
+      message: 'Paramètres enregistrés.',
+    })
   })
 
   it('saves the registration toggle when turned off', () => {
@@ -101,16 +106,20 @@ describe('SystemSettingsAdmin', () => {
     expect(fixture.componentInstance.fieldError(field)).toContain('entier')
   })
 
-  it('shows a generic error message when the save request fails', () => {
+  it('shows a generic error toast when the save request fails', () => {
     const { fixture, httpMock } = render()
 
     fixture.componentInstance.save()
 
+    const toastService = TestBed.inject(ToastService)
     httpMock
       .expectOne('/api/admin/settings')
       .flush(null, { status: 400, statusText: 'Bad Request' })
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain('Échec de la mise à jour des paramètres.')
+    expect(toastService.toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'Échec de la mise à jour des paramètres.',
+    })
   })
 })

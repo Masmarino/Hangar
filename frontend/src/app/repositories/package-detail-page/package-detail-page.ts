@@ -27,6 +27,7 @@ import { PageTitleService } from '../../shell/page-title.service'
 import { FormatBytesPipe } from '../../shared/format-bytes.pipe'
 import { bySeverityDesc } from '../../shared/severity'
 import { formatSelectedCount } from '../../shared/format'
+import { ToastService } from '../../shared/toast.service'
 
 const PAGE_SIZE = 20
 
@@ -91,9 +92,9 @@ export class PackageDetailPage {
   private readonly router = inject(Router)
   private readonly repositoriesService = inject(RepositoriesService)
   private readonly pageTitle = inject(PageTitleService)
+  private readonly toastService = inject(ToastService)
 
-  // reactive, not a one-time route.snapshot read — Angular can reuse this component
-  // across param changes on the same route, and a snapshot would keep showing stale data
+  // Reactive, not route.snapshot — Angular reuses this component across param changes.
   private readonly routeParams = toSignal(
     this.route.paramMap.pipe(
       map((params) => ({
@@ -115,8 +116,7 @@ export class PackageDetailPage {
   readonly npmDetails = signal<NpmPackageDetails | null>(null)
   readonly dockerDetails = signal<DockerImageDetails | null>(null)
 
-  // A package with a long publish/tag history renders hundreds of rows otherwise — same
-  // page-local pagination already used below for findings/vulnerabilities.
+  // A long publish/tag history renders hundreds of rows otherwise.
   readonly versionsPage = signal(1)
   readonly versionsTotalPages = computed(() =>
     Math.max(1, Math.ceil((this.npmDetails()?.versions.length ?? 0) / PAGE_SIZE)),
@@ -148,14 +148,12 @@ export class PackageDetailPage {
   // Fetched once on load so delete/rescan buttons can be hidden for a read-only viewer.
   readonly canWrite = signal(false)
 
-  // Never fails the page — an outage in npm's third-party advisory database shouldn't
-  // block viewing or managing the package itself.
+  // An outage in npm's advisory database shouldn't block viewing the package.
   readonly auditLoading = signal(true)
   readonly auditAdvisories = signal<NpmAdvisory[] | null>(null)
   readonly auditFailed = signal(false)
 
-  // Scoped to the `latest` version — walking every stored version's tree would be too
-  // expensive per page view. Only reads the last persisted result; a fresh scan needs a click.
+  // Reads the last persisted result for `latest` — a fresh scan needs a click.
   readonly depAuditLoading = signal(true)
   readonly depAuditResult = signal<NpmDependencyAuditResult | null>(null)
   readonly depAuditFailed = signal(false)
@@ -185,8 +183,7 @@ export class PackageDetailPage {
     return this.filteredFindings().slice(start, start + PAGE_SIZE)
   })
 
-  // Same persisted-result reasoning as the dependency audit above — a Trivy scan takes
-  // real time, so a page view only reads the last completed one.
+  // Same as the dependency audit — reads the last completed Trivy scan, not a live one.
   readonly imageScanLoading = signal(true)
   readonly imageScanResult = signal<DockerImageScanResult | null>(null)
   readonly imageScanFailed = signal(false)
@@ -439,18 +436,18 @@ export class PackageDetailPage {
     this.router.navigate(['/repositories', this.repositoryId])
   }
 
-  readonly deleteError = signal<string | null>(null)
-
   deleteVersion(version: string): void {
     if (!confirm(`Supprimer la version ${version} de ${this.name} ?`)) {
       return
     }
-    this.deleteError.set(null)
     this.repositoriesService
       .deleteNpmPackageVersion(this.repositoryId, this.name, version)
       .subscribe({
-        next: () => this.reload(),
-        error: () => this.deleteError.set(`Échec de la suppression de la version ${version}.`),
+        next: () => {
+          this.reload()
+          this.toastService.success(`Version ${version} supprimée.`)
+        },
+        error: () => this.toastService.error(`Échec de la suppression de la version ${version}.`),
       })
   }
 
@@ -460,10 +457,12 @@ export class PackageDetailPage {
     ) {
       return
     }
-    this.deleteError.set(null)
     this.repositoriesService.deleteNpmPackage(this.repositoryId, this.name).subscribe({
-      next: () => this.backToRepository(),
-      error: () => this.deleteError.set('Échec de la suppression du package.'),
+      next: () => {
+        this.backToRepository()
+        this.toastService.success(`Package ${this.name} supprimé.`)
+      },
+      error: () => this.toastService.error('Échec de la suppression du package.'),
     })
   }
 
@@ -475,10 +474,12 @@ export class PackageDetailPage {
     ) {
       return
     }
-    this.deleteError.set(null)
     this.repositoriesService.deleteDockerTag(this.repositoryId, this.name, tag).subscribe({
-      next: () => this.reload(),
-      error: () => this.deleteError.set(`Échec de la suppression du tag ${tag}.`),
+      next: () => {
+        this.reload()
+        this.toastService.success(`Tag ${tag} supprimé.`)
+      },
+      error: () => this.toastService.error(`Échec de la suppression du tag ${tag}.`),
     })
   }
 
@@ -486,10 +487,12 @@ export class PackageDetailPage {
     if (!confirm(`Supprimer entièrement l'image ${this.name} ? Cette action est irréversible.`)) {
       return
     }
-    this.deleteError.set(null)
     this.repositoriesService.deleteDockerImage(this.repositoryId, this.name).subscribe({
-      next: () => this.backToRepository(),
-      error: () => this.deleteError.set("Échec de la suppression de l'image."),
+      next: () => {
+        this.backToRepository()
+        this.toastService.success(`Image ${this.name} supprimée.`)
+      },
+      error: () => this.toastService.error("Échec de la suppression de l'image."),
     })
   }
 }

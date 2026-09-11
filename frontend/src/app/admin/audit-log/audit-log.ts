@@ -2,9 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   LOCALE_ID,
-  OnInit,
   computed,
+  effect,
   inject,
+  input,
   signal,
 } from '@angular/core'
 import { DatePipe } from '@angular/common'
@@ -39,9 +40,12 @@ interface AuditCsvRow {
   styleUrl: './audit-log.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AuditLog implements OnInit {
+export class AuditLog {
   private readonly auditService = inject(AuditService)
   private readonly datePipe = inject(DatePipe)
+
+  /** Set only when embedded in an organization's own admin page — scopes the query to it. */
+  readonly organizationId = input<string | undefined>(undefined)
 
   readonly entries = signal<AuditEntry[]>([])
   readonly loading = signal(true)
@@ -79,12 +83,18 @@ export class AuditLog implements OnInit {
       .sort((a, b) => b.value - a.value)
   })
 
-  ngOnInit(): void {
-    // Security events have their own screen — excluded server-side so they can't
-    // crowd real history out of the row limit.
-    this.auditService.query({ exclude_aggregate_type: 'Security' }).subscribe((entries) => {
-      this.entries.set(entries)
-      this.loading.set(false)
+  // effect(), not ngOnInit — this component is reused across organizations on the same route.
+  constructor() {
+    effect(() => {
+      const organizationId = this.organizationId()
+      this.loading.set(true)
+      // Security events have their own screen, excluded server-side.
+      this.auditService
+        .query({ exclude_aggregate_type: 'Security', organization_id: organizationId })
+        .subscribe((entries) => {
+          this.entries.set(entries)
+          this.loading.set(false)
+        })
     })
   }
 

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, output, signal } from '@ang
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
 import { Button, GbtInput, Modal } from '@masmarino/gabarit'
 import { OrganizationsService } from '../application/organizations.service'
+import { ToastService } from '../../shared/toast.service'
 
 @Component({
   selector: 'app-create-organization-modal',
@@ -12,6 +13,7 @@ import { OrganizationsService } from '../application/organizations.service'
 })
 export class CreateOrganizationModal {
   private readonly organizationsService = inject(OrganizationsService)
+  private readonly toastService = inject(ToastService)
 
   readonly created = output<void>()
   readonly cancelled = output<void>()
@@ -33,8 +35,12 @@ export class CreateOrganizationModal {
       next: () => {
         this.creating.set(false)
         this.created.emit()
+        this.toastService.success(`Organisation « ${displayName} » créée.`)
       },
-      error: () => this.creating.set(false),
+      error: (err) => {
+        this.creating.set(false)
+        this.toastService.error(err?.error?.error ?? "Échec de la création de l'organisation.")
+      },
     })
   }
 }

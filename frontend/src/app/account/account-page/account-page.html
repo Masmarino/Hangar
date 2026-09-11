@@ -44,12 +44,6 @@
               autocomplete="new-password"
               [errorMessage]="confirmPasswordError"
             />
-            @if (errorMessage(); as message) {
-              <p class="gbt-form-error" role="alert">{{ message }}</p>
-            }
-            @if (successMessage(); as message) {
-              <p class="gbt-form-success" role="status">{{ message }}</p>
-            }
             <gbt-button
               text="Changer le mot de passe"
               type="submit"

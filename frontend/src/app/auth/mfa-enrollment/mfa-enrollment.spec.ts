@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing'
+import { By } from '@angular/platform-browser'
 import { of, throwError } from 'rxjs'
+import { Tooltip } from '@masmarino/gabarit'
 import { MfaEnrollmentPage } from './mfa-enrollment'
 import { AuthService } from '../application/auth.service'
 
@@ -14,8 +16,7 @@ describe('MfaEnrollmentPage', () => {
   }
 
   beforeEach(() => {
-    // This project's test runner (Angular's vitest-based unit-test builder) has no
-    // `jasmine` global to provide `createSpyObj` — hand-rolled `vi.fn()` spies stand in.
+    // No jasmine here (vitest-based runner) — hand-rolled vi.fn() spies stand in.
     authServiceSpy = {
       startTotpSetup: vi.fn(),
       confirmTotpSetup: vi.fn(),
@@ -35,6 +36,14 @@ describe('MfaEnrollmentPage', () => {
 
   it('starts in the choice step', () => {
     expect(component.setupStep()).toBe('choice')
+  })
+
+  it('explains via a tooltip what the TOTP option requires', () => {
+    const tooltip = fixture.debugElement.query(By.directive(Tooltip))
+
+    expect((tooltip.componentInstance as Tooltip).text()).toBe(
+      'Nécessite une application comme Google Authenticator, Authy ou 1Password.',
+    )
   })
 
   it('moves to the totp-enroll step and stores the secret on chooseTotpSetup', () => {
@@ -58,8 +67,6 @@ describe('MfaEnrollmentPage', () => {
     expect(completedSpy).toHaveBeenCalled()
   })
 
-  // Ported from the pre-extraction login-page.spec.ts, which exercised this same behavior
-  // directly on LoginPage before the mandatory-enrollment flow moved into this component.
   it('shows backup codes once TOTP setup is confirmed', () => {
     authServiceSpy.startTotpSetup.mockReturnValue(
       of({

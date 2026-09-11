@@ -9,20 +9,26 @@ import {
 } from '../domain/metrics.entity'
 import { MetricsPort } from '../application/metrics.port'
 
+function orgParams(organizationId?: string): Record<string, string> {
+  return organizationId ? { organization_id: organizationId } : {}
+}
+
 @Injectable()
 export class HttpMetricsAdapter implements MetricsPort {
   private readonly http = inject(HttpClient)
 
-  usage(): Observable<RepositoryUsage[]> {
-    return this.http.get<RepositoryUsage[]>('/api/admin/metrics')
+  usage(organizationId?: string): Observable<RepositoryUsage[]> {
+    return this.http.get<RepositoryUsage[]>('/api/admin/metrics', {
+      params: orgParams(organizationId),
+    })
   }
 
   health(): Observable<HealthStatus> {
     return this.http.get<HealthStatus>('/api/admin/health')
   }
 
-  stats(): Observable<AdminStats> {
-    return this.http.get<AdminStats>('/api/admin/stats')
+  stats(organizationId?: string): Observable<AdminStats> {
+    return this.http.get<AdminStats>('/api/admin/stats', { params: orgParams(organizationId) })
   }
 
   history(days?: number): Observable<MetricsSnapshot[]> {

@@ -1,9 +1,11 @@
 use axum::body::Bytes;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::{header, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Json, Router};
+use serde::Deserialize;
+use uuid::Uuid;
 
 use crate::auth_middleware::AuthUser;
 use crate::authz::require_organization_admin;
@@ -11,17 +13,23 @@ use crate::dto::{application_error_response, ErrorResponse};
 use crate::organization_middleware::ResolvedOrganization;
 use crate::state::AppState;
 
+/// Lets a super-admin target an org other than the one the request's domain resolves to.
+#[derive(Deserialize)]
+struct OrgScopeParams {
+    organization_id: Option<Uuid>,
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/api/branding/logo", get(get_logo))
         .route("/api/branding/favicon", get(get_favicon))
         .route(
             "/api/admin/branding/logo",
-            axum::routing::put(set_logo).delete(clear_logo),
+            axum::routing::get(get_logo_scoped).put(set_logo).delete(clear_logo),
         )
         .route(
             "/api/admin/branding/favicon",
-            axum::routing::put(set_favicon).delete(clear_favicon),
+            axum::routing::get(get_favicon_scoped).put(set_favicon).delete(clear_favicon),
         )
 }
 
@@ -36,34 +44,49 @@ async fn get_favicon(State(state): State<AppState>, resolved_org: ResolvedOrgani
     Ok(([(header::CONTENT_TYPE, branding.favicon.content_type), (header::CACHE_CONTROL, "no-cache".to_string())], branding.favicon.bytes))
 }
 
-/// A super-admin manages whatever org the domain resolves to; anyone else only ever manages their own.
-fn target_organization_id(user: &AuthUser, resolved_org: &ResolvedOrganization) -> uuid::Uuid {
-    if user.is_super_admin { resolved_org.0.id } else { user.organization_id }
+/// A super-admin can target any org via `requested`; anyone else always gets their own.
+fn target_organization_id(user: &AuthUser, resolved_org: &ResolvedOrganization, requested: Option<Uuid>) -> uuid::Uuid {
+    if user.is_super_admin { requested.unwrap_or(resolved_org.0.id) } else { user.organization_id }
 }
 
-async fn set_logo(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, body: Bytes) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
-    let organization_id = target_organization_id(&user, &resolved_org);
+/// Authenticated counterpart to `get_logo`, so a super-admin can preview another org's branding.
+async fn get_logo_scoped(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, Query(scope): Query<OrgScopeParams>) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
+    require_organization_admin(&user, organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
+    let branding = state.get_branding.execute(organization_id).await.map_err(|e| application_error_response("failed to get branding", e))?;
+    Ok(([(header::CONTENT_TYPE, branding.logo.content_type), (header::CACHE_CONTROL, "no-cache".to_string())], branding.logo.bytes))
+}
+
+async fn get_favicon_scoped(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, Query(scope): Query<OrgScopeParams>) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
+    require_organization_admin(&user, organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
+    let branding = state.get_branding.execute(organization_id).await.map_err(|e| application_error_response("failed to get branding", e))?;
+    Ok(([(header::CONTENT_TYPE, branding.favicon.content_type), (header::CACHE_CONTROL, "no-cache".to_string())], branding.favicon.bytes))
+}
+
+async fn set_logo(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, Query(scope): Query<OrgScopeParams>, body: Bytes) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
     require_organization_admin(&user, organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     state.set_branding_logo.execute(organization_id, body.to_vec()).await.map_err(|e| application_error_response("failed to set branding logo", e))?;
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn clear_logo(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
-    let organization_id = target_organization_id(&user, &resolved_org);
+async fn clear_logo(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, Query(scope): Query<OrgScopeParams>) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
     require_organization_admin(&user, organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     state.clear_branding_logo.execute(organization_id).await.map_err(|e| application_error_response("failed to clear branding logo", e))?;
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn set_favicon(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, body: Bytes) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
-    let organization_id = target_organization_id(&user, &resolved_org);
+async fn set_favicon(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, Query(scope): Query<OrgScopeParams>, body: Bytes) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
     require_organization_admin(&user, organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     state.set_branding_favicon.execute(organization_id, body.to_vec()).await.map_err(|e| application_error_response("failed to set branding favicon", e))?;
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn clear_favicon(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
-    let organization_id = target_organization_id(&user, &resolved_org);
+async fn clear_favicon(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, Query(scope): Query<OrgScopeParams>) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
     require_organization_admin(&user, organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     state.clear_branding_favicon.execute(organization_id).await.map_err(|e| application_error_response("failed to clear branding favicon", e))?;
     Ok(StatusCode::NO_CONTENT)
@@ -202,8 +225,7 @@ mod tests {
         let token = state.authenticate_user.execute("admin", "sup3r-s3cret!").await.unwrap();
         let app = build_router(state);
 
-        // Bigger than both the 10 MiB router limit and the 2 MiB branding check — a 413 here
-        // (not that check's 400) proves the router limit is what actually stopped it.
+        // Past the 10 MiB router limit, not just the 2 MiB branding check — expect its 413.
         let oversized = vec![0u8; 11 * 1024 * 1024];
         let response = app
             .oneshot(
@@ -340,5 +362,151 @@ mod tests {
         let get = app.oneshot(Request::builder().uri("/api/branding/logo").body(Body::empty()).unwrap()).await.unwrap();
         let body = to_bytes(get.into_body(), usize::MAX).await.unwrap();
         assert_eq!(body.to_vec(), default_body.to_vec(), "an org-admin's upload must land on their own organization, never on the public organization the request's domain happened to resolve to");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn a_super_admin_can_target_a_specific_organizations_logo_via_the_query_param(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        state.create_user.execute(Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(), "admin", "sup3r-s3cret!", true).await.unwrap();
+        let super_admin_token = state.authenticate_user.execute("admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state.clone());
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("PUT")
+                    .uri(format!("/api/admin/branding/logo?organization_id={acme_id}"))
+                    .header("authorization", format!("Bearer {super_admin_token}"))
+                    .body(Body::from(png_bytes()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), axum::http::StatusCode::NO_CONTENT);
+
+        let acme_branding = state.get_branding.execute(acme_id).await.unwrap();
+        assert_eq!(acme_branding.logo.bytes, png_bytes(), "?organization_id= must target that organization, not whichever one the request's domain resolves to");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn an_organization_admin_cannot_use_the_organization_id_query_param_to_target_another_organizations_logo(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        let other_id = state.create_organization.execute("other", "Other Corp").await.unwrap();
+        let org_admin_id = state.create_user.execute(acme_id, "org-admin", "sup3r-s3cret!", false).await.unwrap();
+        state.users.set_organization_admin(org_admin_id, true).await.unwrap();
+        let token = state.authenticate_user.execute("org-admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state.clone());
+
+        app.oneshot(
+            Request::builder()
+                .method("PUT")
+                .uri(format!("/api/admin/branding/logo?organization_id={other_id}"))
+                .header("authorization", format!("Bearer {token}"))
+                .body(Body::from(png_bytes()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+        let other_branding = state.get_branding.execute(other_id).await.unwrap();
+        assert_ne!(other_branding.logo.bytes, png_bytes(), "an organization admin must not be able to use ?organization_id= to escape their own organization");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn a_super_admin_can_preview_a_specific_organizations_logo_via_the_authenticated_endpoint(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        state.create_user.execute(Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(), "admin", "sup3r-s3cret!", true).await.unwrap();
+        let token = state.authenticate_user.execute("admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state.clone());
+
+        app.clone()
+            .oneshot(
+                Request::builder()
+                    .method("PUT")
+                    .uri(format!("/api/admin/branding/logo?organization_id={acme_id}"))
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::from(png_bytes()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // No `host` header, so the public endpoint would show the public org's logo instead.
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/admin/branding/logo?organization_id={acme_id}"))
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        assert_eq!(body.to_vec(), png_bytes());
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn an_organization_admin_cannot_use_the_organization_id_query_param_to_preview_another_organizations_logo(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        let other_id = state.create_organization.execute("other", "Other Corp").await.unwrap();
+        let org_admin_id = state.create_user.execute(acme_id, "org-admin", "sup3r-s3cret!", false).await.unwrap();
+        state.users.set_organization_admin(org_admin_id, true).await.unwrap();
+        let token = state.authenticate_user.execute("org-admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state.clone());
+
+        app.clone()
+            .oneshot(
+                Request::builder()
+                    .method("PUT")
+                    .uri(format!("/api/admin/branding/logo?organization_id={other_id}"))
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::from(png_bytes()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // Same escape prevention as the write: still Acme's logo, not `other_id`'s.
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/admin/branding/logo?organization_id={other_id}"))
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        assert_eq!(body.to_vec(), png_bytes(), "must return Acme's own logo, not other_id's");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn a_non_admin_cannot_preview_the_logo_via_the_authenticated_endpoint(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        state.create_user.execute(Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(), "regular", "sup3r-s3cret!", false).await.unwrap();
+        let token = state.authenticate_user.execute("regular", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/admin/branding/logo")
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), axum::http::StatusCode::FORBIDDEN);
     }
 }

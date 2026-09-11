@@ -23,12 +23,20 @@
             <td>{{ member.is_organization_admin ? 'Oui' : 'Non' }}</td>
             <td>{{ member.invitation_pending ? 'Oui' : 'Non' }}</td>
             <td class="organization-members__actions">
-              <gbt-button
-                [text]="member.is_organization_admin ? 'Rétrograder' : 'Promouvoir'"
-                variant="secondary"
-                size="small"
-                (clicked)="toggleOrganizationAdmin(member)"
-              />
+              <gbt-tooltip
+                [text]="
+                  member.is_organization_admin
+                    ? 'Retire les droits d\'administration de cette organisation.'
+                    : 'Donne les droits d\'administration complets sur cette organisation.'
+                "
+              >
+                <gbt-button
+                  [text]="member.is_organization_admin ? 'Rétrograder' : 'Promouvoir'"
+                  variant="secondary"
+                  size="small"
+                  (clicked)="toggleOrganizationAdmin(member)"
+                />
+              </gbt-tooltip>
             </td>
           </tr>
         }

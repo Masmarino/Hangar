@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, output, signal } from '@ang
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
 import { Button, Checkbox, GbtInput, Modal } from '@masmarino/gabarit'
 import { UsersService } from '../application/users.service'
+import { ToastService } from '../../shared/toast.service'
 
 @Component({
   selector: 'app-create-user-modal',
@@ -12,6 +13,7 @@ import { UsersService } from '../application/users.service'
 })
 export class CreateUserModal {
   private readonly usersService = inject(UsersService)
+  private readonly toastService = inject(ToastService)
 
   readonly created = output<void>()
   readonly cancelled = output<void>()
@@ -37,8 +39,12 @@ export class CreateUserModal {
       next: () => {
         this.creating.set(false)
         this.created.emit()
+        this.toastService.success(`Utilisateur « ${username} » créé.`)
       },
-      error: () => this.creating.set(false),
+      error: (err) => {
+        this.creating.set(false)
+        this.toastService.error(err?.error?.error ?? "Échec de la création de l'utilisateur.")
+      },
     })
   }
 }

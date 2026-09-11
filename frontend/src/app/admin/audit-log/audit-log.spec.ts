@@ -195,4 +195,41 @@ describe('AuditLog', () => {
     const button: HTMLButtonElement = fixture.nativeElement.querySelector('gbt-button button')
     expect(button.disabled).toBe(true)
   })
+
+  it('re-fetches when organizationId changes to a different organization — the component is reused, not recreated, across a super-admin switching organizations', () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), ...adminProviders],
+    })
+    const fixture = TestBed.createComponent(AuditLog)
+    const httpMock = TestBed.inject(HttpTestingController)
+
+    fixture.detectChanges()
+    httpMock
+      .expectOne((r) => r.url === '/api/audit/events' && !r.params.has('organization_id'))
+      .flush([])
+
+    fixture.componentRef.setInput('organizationId', 'org-1')
+    fixture.detectChanges()
+    httpMock
+      .expectOne((r) => r.params.get('organization_id') === 'org-1')
+      .flush([
+        {
+          aggregate_type: 'Repository',
+          aggregate_id: 'r1',
+          event_type: 'Created',
+          payload: {},
+          occurred_at: '2026-01-01T00:00:00Z',
+          actor_id: null,
+        },
+      ])
+    fixture.detectChanges()
+    expect(fixture.nativeElement.textContent).toContain('Repository')
+
+    fixture.componentRef.setInput('organizationId', 'org-2')
+    fixture.detectChanges()
+    httpMock.expectOne((r) => r.params.get('organization_id') === 'org-2').flush([])
+    fixture.detectChanges()
+
+    expect(fixture.nativeElement.textContent).not.toContain('Repository')
+  })
 })

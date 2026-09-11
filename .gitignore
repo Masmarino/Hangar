@@ -8,3 +8,4 @@ dist/
 .worktrees/
 .superpowers/
 /docs/
+helm/hangar/values-secrets.yaml

@@ -58,32 +58,6 @@ describe('AppShell', () => {
     }
   }
 
-  function setupOnOrganizationRoutes() {
-    TestBed.resetTestingModule()
-    TestBed.configureTestingModule({
-      imports: [AppShell],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        ...authProviders,
-        ...userProviders,
-        ...repositoryProviders,
-        ...meProviders,
-        provideRouter([
-          { path: '', component: DummyRoutedComponent },
-          { path: 'admin/organizations/:id', component: DummyRoutedComponent },
-          { path: 'admin/organizations/:id/audit', component: DummyRoutedComponent },
-          { path: 'admin/organizations/:id/metrics', component: DummyRoutedComponent },
-        ]),
-        provideTransloco({
-          config: { availableLangs: ['fr'], defaultLang: 'fr', prodMode: false },
-        }),
-      ],
-    })
-    httpMock = TestBed.inject(HttpTestingController)
-    return TestBed.createComponent(AppShell)
-  }
-
   it('excludes admin-only items from navItems before /api/me resolves', () => {
     const fixture = TestBed.createComponent(AppShell)
     fixture.detectChanges()
@@ -106,16 +80,9 @@ describe('AppShell', () => {
 
     const adminItem = fixture.componentInstance.navItems().find((item) => item.action === 'admin')!
     expect(adminItem.children?.map((child) => child.action)).toEqual([
-      'settings',
-      'smtp',
-      'branding',
-      'tokens',
-      'export',
-      'audit',
-      'metrics',
-      'security',
-      'health',
       'organizations',
+      'export',
+      'health',
     ])
   })
 
@@ -147,7 +114,7 @@ describe('AppShell', () => {
     expect(actions).toContain('users')
   })
 
-  it('shows an Administration submenu for an org-admin who is not a super-admin, linking to their own organization', () => {
+  it('shows an Administration link for an org-admin who is not a super-admin, linking to their own organization', () => {
     const fixture = TestBed.createComponent(AppShell)
     fixture.detectChanges()
     flushMe({
@@ -166,24 +133,7 @@ describe('AppShell', () => {
       .find((item) => item.action === 'organization')!
     expect(orgItem.text).toBe('Administration')
     expect(orgItem.link).toBe('/admin/organizations/org-1')
-    expect(orgItem.children?.map((child) => child.action)).toEqual([
-      'branding',
-      'tokens',
-      'audit',
-      'security',
-      'metrics',
-      'settings',
-      'smtp',
-    ])
-    expect(orgItem.children?.map((child) => child.link)).toEqual([
-      '/admin/organizations/org-1/branding',
-      '/admin/organizations/org-1/tokens',
-      '/admin/organizations/org-1/audit',
-      '/admin/organizations/org-1/security',
-      '/admin/organizations/org-1/metrics',
-      '/admin/organizations/org-1/settings',
-      '/admin/organizations/org-1/smtp',
-    ])
+    expect(orgItem.children).toBeUndefined()
   })
 
   it('does not show the Administration submenu for a super-admin, who already reaches every organization', () => {
@@ -202,86 +152,14 @@ describe('AppShell', () => {
     expect(actions).not.toContain('organization')
   })
 
-  describe('contextual Organisation menu for a super-admin', () => {
-    it('is absent while not browsing a specific organization', () => {
-      const fixture = TestBed.createComponent(AppShell)
-      fixture.detectChanges()
-      flushMe({ id: 'user-1', username: 'admin', is_super_admin: true })
-      fixture.detectChanges()
+  it('a super-admin never gets a standing "organization" nav item — every organization is reached via the Organisations list instead', () => {
+    const fixture = TestBed.createComponent(AppShell)
+    fixture.detectChanges()
+    flushMe({ id: 'user-1', username: 'admin', is_super_admin: true })
+    fixture.detectChanges()
 
-      const actions = fixture.componentInstance.navItems().map((item) => item.action)
-      expect(actions).not.toContain('organization')
-    })
-
-    it('appears with a Métriques link (among the other org-scoped pages) when browsing that organization', async () => {
-      const fixture = setupOnOrganizationRoutes()
-      fixture.detectChanges()
-      flushMe({ id: 'user-1', username: 'admin', is_super_admin: true })
-      fixture.detectChanges()
-
-      const router = TestBed.inject(Router)
-      await router.navigateByUrl('/admin/organizations/org-1')
-      fixture.detectChanges()
-
-      const organizationItem = fixture.componentInstance
-        .navItems()
-        .find((item) => item.action === 'organization')!
-      expect(organizationItem.text).toBe('Organisation')
-      expect(organizationItem.link).toBe('/admin/organizations/org-1')
-      expect(organizationItem.children?.map((child) => child.action)).toEqual([
-        'branding',
-        'tokens',
-        'audit',
-        'security',
-        'metrics',
-        'settings',
-        'smtp',
-      ])
-      expect(organizationItem.children?.find((child) => child.action === 'metrics')?.link).toBe(
-        '/admin/organizations/org-1/metrics',
-      )
-    })
-
-    it("still appears (and auto-expands) on one of that organization's own sub-pages, e.g. its metrics", async () => {
-      const fixture = setupOnOrganizationRoutes()
-      fixture.detectChanges()
-      flushMe({ id: 'user-1', username: 'admin', is_super_admin: true })
-      fixture.detectChanges()
-
-      const router = TestBed.inject(Router)
-      await router.navigateByUrl('/admin/organizations/org-1/metrics')
-      fixture.detectChanges()
-      await fixture.whenStable()
-      fixture.detectChanges()
-
-      const organizationItem = fixture.componentInstance
-        .navItems()
-        .find((item) => item.action === 'organization')!
-      expect(organizationItem).toBeTruthy()
-      expect(fixture.componentInstance.isMenuOpen(organizationItem)).toBe(true)
-    })
-
-    it('disappears again once navigation leaves that organization', async () => {
-      const fixture = setupOnOrganizationRoutes()
-      fixture.detectChanges()
-      flushMe({ id: 'user-1', username: 'admin', is_super_admin: true })
-      fixture.detectChanges()
-
-      const router = TestBed.inject(Router)
-      await router.navigateByUrl('/admin/organizations/org-1')
-      fixture.detectChanges()
-      expect(fixture.componentInstance.navItems().map((item) => item.action)).toContain(
-        'organization',
-      )
-
-      await router.navigateByUrl('/admin/organizations/org-1/audit')
-      await router.navigateByUrl('/')
-      fixture.detectChanges()
-
-      expect(fixture.componentInstance.navItems().map((item) => item.action)).not.toContain(
-        'organization',
-      )
-    })
+    const actions = fixture.componentInstance.navItems().map((item) => item.action)
+    expect(actions).not.toContain('organization')
   })
 
   describe('Administration submenu', () => {
@@ -298,7 +176,7 @@ describe('AppShell', () => {
           ...meProviders,
           provideRouter([
             { path: 'admin', component: DummyRoutedComponent },
-            { path: 'admin/audit', component: DummyRoutedComponent },
+            { path: 'admin/export', component: DummyRoutedComponent },
           ]),
           provideTransloco({
             config: { availableLangs: ['fr'], defaultLang: 'fr', prodMode: false },
@@ -330,7 +208,7 @@ describe('AppShell', () => {
       fixture.detectChanges()
 
       const router = TestBed.inject(Router)
-      await router.navigateByUrl('/admin/audit')
+      await router.navigateByUrl('/admin/export')
       fixture.detectChanges()
       await fixture.whenStable()
       fixture.detectChanges()
@@ -343,13 +221,13 @@ describe('AppShell', () => {
       const links: HTMLAnchorElement[] = Array.from(
         fixture.nativeElement.querySelectorAll('a.app-shell__nav-link--sub'),
       )
-      const auditLink = links.find((el) => el.textContent?.includes('Historique'))!
+      const exportLink = links.find((el) => el.textContent?.includes('Export'))!
 
       expect(adminLink.classList.contains('app-shell__nav-link--active')).toBe(false)
-      expect(auditLink).toBeTruthy()
-      expect(auditLink.classList.contains('app-shell__nav-link--active')).toBe(true)
+      expect(exportLink).toBeTruthy()
+      expect(exportLink.classList.contains('app-shell__nav-link--active')).toBe(true)
       expect(adminLink.getAttribute('aria-current')).toBeNull()
-      expect(auditLink.getAttribute('aria-current')).toBe('page')
+      expect(exportLink.getAttribute('aria-current')).toBe('page')
     })
 
     it('toggles open and closed via the chevron button, independent of route', () => {
@@ -378,7 +256,7 @@ describe('AppShell', () => {
       flushMe({ id: 'user-1', username: 'florian', is_super_admin: true })
       fixture.detectChanges()
       const router = TestBed.inject(Router)
-      await router.navigateByUrl('/admin/audit')
+      await router.navigateByUrl('/admin/export')
       fixture.detectChanges()
       expect(fixture.componentInstance.isMenuOpen(adminItem(fixture))).toBe(true)
 
@@ -386,34 +264,6 @@ describe('AppShell', () => {
       fixture.detectChanges()
 
       expect(fixture.componentInstance.isMenuOpen(adminItem(fixture))).toBe(false)
-    })
-
-    it('toggling one dropdown group does not affect another open at the same time', async () => {
-      const fixture = setupOnOrganizationRoutes()
-      fixture.detectChanges()
-      flushMe({ id: 'user-1', username: 'admin', is_super_admin: true })
-      fixture.detectChanges()
-
-      const router = TestBed.inject(Router)
-      await router.navigateByUrl('/admin/organizations/org-1/audit')
-      fixture.detectChanges()
-      await fixture.whenStable()
-      fixture.detectChanges()
-
-      const organizationItem = fixture.componentInstance
-        .navItems()
-        .find((item) => item.action === 'organization')!
-      expect(fixture.componentInstance.isMenuOpen(adminItem(fixture))).toBe(true)
-      expect(fixture.componentInstance.isMenuOpen(organizationItem)).toBe(true)
-
-      const toggles: HTMLButtonElement[] = Array.from(
-        fixture.nativeElement.querySelectorAll('.app-shell__nav-group-toggle'),
-      )
-      toggles[0].click()
-      fixture.detectChanges()
-
-      expect(fixture.componentInstance.isMenuOpen(adminItem(fixture))).toBe(false)
-      expect(fixture.componentInstance.isMenuOpen(organizationItem)).toBe(true)
     })
   })
 

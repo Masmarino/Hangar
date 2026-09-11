@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http'
 import { CreateOrganizationModal } from './create-organization-modal'
 import { organizationsProviders } from '../infrastructure/organizations.providers'
+import { ToastService } from '../../shared/toast.service'
 
 describe('CreateOrganizationModal', () => {
   let httpMock: HttpTestingController
@@ -53,5 +54,38 @@ describe('CreateOrganizationModal', () => {
     fixture.componentInstance.submit()
 
     httpMock.expectNone('/api/organizations')
+  })
+
+  it('shows a success toast naming the organization once created', () => {
+    const fixture = TestBed.createComponent(CreateOrganizationModal)
+    fixture.detectChanges()
+
+    fixture.componentInstance.form.setValue({ slug: 'acme', displayName: 'Acme Corp' })
+    fixture.componentInstance.submit()
+    httpMock
+      .expectOne('/api/organizations')
+      .flush({ id: 'org-1', slug: 'acme', display_name: 'Acme Corp' })
+
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'success',
+      message: 'Organisation « Acme Corp » créée.',
+    })
+  })
+
+  it('shows an error toast with the server message when creation fails', () => {
+    const fixture = TestBed.createComponent(CreateOrganizationModal)
+    fixture.detectChanges()
+
+    fixture.componentInstance.form.setValue({ slug: 'acme', displayName: 'Acme Corp' })
+    fixture.componentInstance.submit()
+    httpMock
+      .expectOne('/api/organizations')
+      .flush({ error: 'ce sous-domaine est déjà pris' }, { status: 409, statusText: 'Conflict' })
+
+    expect(fixture.componentInstance.creating()).toBe(false)
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'ce sous-domaine est déjà pris',
+    })
   })
 })

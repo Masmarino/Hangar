@@ -14,6 +14,7 @@ export interface AuditQuery {
   actor_id?: string
   from?: string
   to?: string
+  organization_id?: string
 }
 
 export interface BlockedAccount {

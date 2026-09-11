@@ -1,8 +1,17 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core'
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core'
 import { FormsModule } from '@angular/forms'
-import { Button, Card, GbtInput, Select, SelectOption } from '@masmarino/gabarit'
+import { Button, Card, GbtInput, Select, SelectOption, Tooltip } from '@masmarino/gabarit'
 import { SmtpSettingsService } from '../application/smtp-settings.service'
 import { SmtpSecurity } from '../domain/smtp-settings.entity'
+import { ToastService } from '../../shared/toast.service'
 
 const SECURITY_OPTIONS: SelectOption<SmtpSecurity>[] = [
   { value: 'start_tls', label: 'STARTTLS (port 587 usuellement)' },
@@ -13,13 +22,17 @@ const SECURITY_OPTIONS: SelectOption<SmtpSecurity>[] = [
 @Component({
   selector: 'app-smtp-settings',
   standalone: true,
-  imports: [Button, Card, GbtInput, Select, FormsModule],
+  imports: [Button, Card, GbtInput, Select, FormsModule, Tooltip],
   templateUrl: './smtp-settings.html',
   styleUrl: './smtp-settings.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SmtpSettingsAdmin implements OnInit {
+export class SmtpSettingsAdmin {
   private readonly settingsService = inject(SmtpSettingsService)
+  private readonly toastService = inject(ToastService)
+
+  /** Set only when embedded in an organization's own admin page — scopes read/write to it. */
+  readonly organizationId = input<string | undefined>(undefined)
 
   readonly securityOptions = SECURITY_OPTIONS
 
@@ -34,26 +47,36 @@ export class SmtpSettingsAdmin implements OnInit {
 
   readonly loading = signal(true)
   readonly saving = signal(false)
-  readonly saved = signal(false)
-  readonly errorMessage = signal<string | null>(null)
 
   readonly testRecipient = signal('')
   readonly sendingTest = signal(false)
-  readonly testSent = signal(false)
-  readonly testErrorMessage = signal<string | null>(null)
 
-  ngOnInit(): void {
-    this.settingsService.get().subscribe((settings) => {
-      if (settings) {
-        this.host.set(settings.host)
-        this.port.set(String(settings.port))
-        this.username.set(settings.username)
-        this.fromName.set(settings.from_name)
-        this.fromAddress.set(settings.from_address)
-        this.security.set(settings.security)
-        this.passwordSet.set(settings.password_set)
-      }
-      this.loading.set(false)
+  // effect(), not ngOnInit — this component is reused across organizations on the same route.
+  constructor() {
+    effect(() => {
+      const organizationId = this.organizationId()
+      this.loading.set(true)
+      this.settingsService.get(organizationId).subscribe((settings) => {
+        if (settings) {
+          this.host.set(settings.host)
+          this.port.set(String(settings.port))
+          this.username.set(settings.username)
+          this.fromName.set(settings.from_name)
+          this.fromAddress.set(settings.from_address)
+          this.security.set(settings.security)
+          this.passwordSet.set(settings.password_set)
+        } else {
+          // Reset, or a previous org's SMTP config lingers on screen for one with none.
+          this.host.set('')
+          this.port.set('587')
+          this.username.set('')
+          this.fromName.set('Hangar')
+          this.fromAddress.set('')
+          this.security.set('start_tls')
+          this.passwordSet.set(false)
+        }
+        this.loading.set(false)
+      })
     })
   }
 
@@ -115,54 +138,51 @@ export class SmtpSettingsAdmin implements OnInit {
   )
 
   save(): void {
-    this.saved.set(false)
-    this.errorMessage.set(null)
     this.attemptedSave.set(true)
     if (this.hasErrors()) {
       return
     }
     this.saving.set(true)
     this.settingsService
-      .update({
-        host: this.host(),
-        port: Number(this.port()),
-        username: this.username(),
-        password: this.password().trim() === '' ? undefined : this.password(),
-        from_name: this.fromName(),
-        from_address: this.fromAddress(),
-        security: this.security(),
-      })
+      .update(
+        {
+          host: this.host(),
+          port: Number(this.port()),
+          username: this.username(),
+          password: this.password().trim() === '' ? undefined : this.password(),
+          from_name: this.fromName(),
+          from_address: this.fromAddress(),
+          security: this.security(),
+        },
+        this.organizationId(),
+      )
       .subscribe({
         next: () => {
           this.saving.set(false)
-          this.saved.set(true)
           this.passwordSet.set(true)
           this.password.set('')
+          this.toastService.success('Paramètres SMTP enregistrés.')
         },
         error: () => {
           this.saving.set(false)
-          this.errorMessage.set('Échec de la mise à jour des paramètres SMTP.')
+          this.toastService.error('Échec de la mise à jour des paramètres SMTP.')
         },
       })
   }
 
   sendTest(): void {
-    this.testSent.set(false)
-    this.testErrorMessage.set(null)
     if (this.testRecipient().trim() === '') {
       return
     }
     this.sendingTest.set(true)
-    this.settingsService.sendTestEmail(this.testRecipient()).subscribe({
+    this.settingsService.sendTestEmail(this.testRecipient(), this.organizationId()).subscribe({
       next: () => {
         this.sendingTest.set(false)
-        this.testSent.set(true)
+        this.toastService.success('E-mail de test envoyé.')
       },
       error: () => {
         this.sendingTest.set(false)
-        this.testErrorMessage.set(
-          "Échec de l'envoi de l'e-mail de test. Vérifiez la configuration.",
-        )
+        this.toastService.error("Échec de l'envoi de l'e-mail de test. Vérifiez la configuration.")
       },
     })
   }

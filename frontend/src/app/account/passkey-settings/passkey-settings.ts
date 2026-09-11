@@ -5,6 +5,7 @@ import { Button, Card, GbtInput } from '@masmarino/gabarit'
 import { MfaService } from '../application/mfa.service'
 import { PasskeySummary } from '../domain/mfa.types'
 import { createPasskeyCredential, passkeysSupported } from '../../shared/webauthn-browser'
+import { ToastService } from '../../shared/toast.service'
 
 @Component({
   selector: 'app-passkey-settings',
@@ -16,6 +17,7 @@ import { createPasskeyCredential, passkeysSupported } from '../../shared/webauth
 })
 export class PasskeySettings implements OnInit {
   private readonly mfaService = inject(MfaService)
+  private readonly toastService = inject(ToastService)
 
   readonly supported = passkeysSupported()
   readonly loading = signal(true)
@@ -47,7 +49,6 @@ export class PasskeySettings implements OnInit {
   }
 
   startAdding(): void {
-    this.errorMessage.set(null)
     this.newPasskeyName.set('')
     this.addingName.set(true)
   }
@@ -61,7 +62,6 @@ export class PasskeySettings implements OnInit {
       return
     }
     this.registering.set(true)
-    this.errorMessage.set(null)
     try {
       const start = await firstValueFrom(this.mfaService.startPasskeyRegistration())
       const credential = await createPasskeyCredential(start.public_key)
@@ -74,9 +74,10 @@ export class PasskeySettings implements OnInit {
       )
       this.addingName.set(false)
       this.reload()
+      this.toastService.success('Clé d’accès enregistrée.')
     } catch (err) {
       console.error('Passkey registration failed:', err)
-      this.errorMessage.set("Échec de l'enregistrement de la clé d'accès. Réessayez.")
+      this.toastService.error("Échec de l'enregistrement de la clé d'accès. Réessayez.")
     } finally {
       this.registering.set(false)
     }
@@ -96,16 +97,16 @@ export class PasskeySettings implements OnInit {
       return
     }
     this.deletingIds.update((ids) => new Set(ids).add(id))
-    this.errorMessage.set(null)
     this.mfaService.deletePasskey(id, password).subscribe({
       next: () => {
         this.stopDeleting(id)
         this.setPasswordFor(id, '')
         this.reload()
+        this.toastService.success('Clé d’accès supprimée.')
       },
       error: () => {
         this.stopDeleting(id)
-        this.errorMessage.set('Mot de passe incorrect.')
+        this.toastService.error('Mot de passe incorrect.')
       },
     })
   }

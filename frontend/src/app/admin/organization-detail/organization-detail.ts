@@ -1,13 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core'
-import { toSignal } from '@angular/core/rxjs-interop'
-import { ActivatedRoute } from '@angular/router'
-import { map } from 'rxjs'
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core'
 import { FormsModule } from '@angular/forms'
-import { Button, Card, GbtInput, Select, SelectOption } from '@masmarino/gabarit'
+import { Button, Card, GbtInput, Select, SelectOption, Tooltip } from '@masmarino/gabarit'
 import { PageTitleService } from '../../shell/page-title.service'
 import { OrganizationsService } from '../application/organizations.service'
 import { OrganizationSummary } from '../domain/organization.entity'
 import { OrganizationMembers } from '../organization-members/organization-members'
+import { ToastService } from '../../shared/toast.service'
 
 const PROVIDER_TYPE_OPTIONS: SelectOption<'ldap' | 'oidc'>[] = [
   { value: 'ldap', label: 'LDAP' },
@@ -17,20 +23,16 @@ const PROVIDER_TYPE_OPTIONS: SelectOption<'ldap' | 'oidc'>[] = [
 @Component({
   selector: 'app-organization-detail',
   standalone: true,
-  imports: [Card, GbtInput, Button, Select, FormsModule, OrganizationMembers],
+  imports: [Card, GbtInput, Button, Select, FormsModule, OrganizationMembers, Tooltip],
   templateUrl: './organization-detail.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OrganizationDetail {
-  private readonly route = inject(ActivatedRoute)
   private readonly organizationsService = inject(OrganizationsService)
   private readonly pageTitle = inject(PageTitleService)
+  private readonly toastService = inject(ToastService)
 
-  readonly routeOrganizationId = toSignal(
-    this.route.paramMap.pipe(map((params) => params.get('id')!)),
-    { requireSync: true },
-  )
-  private organizationId!: string
+  readonly organizationId = input.required<string>()
 
   readonly organization = signal<OrganizationSummary | null>(null)
   readonly loading = signal(true)
@@ -53,7 +55,6 @@ export class OrganizationDetail {
   readonly clientSecretSet = signal(false)
 
   readonly saving = signal(false)
-  readonly saved = signal(false)
   readonly errorMessage = signal<string | null>(null)
   readonly clearing = signal(false)
 
@@ -75,33 +76,34 @@ export class OrganizationDetail {
     )
   })
 
+  // effect(), not ngOnInit — this component is reused across organizations on the same route.
   constructor() {
     effect(() => {
-      this.organizationId = this.routeOrganizationId()
+      this.organizationId()
       this.reload()
     })
   }
 
   private reload(): void {
-    const requestedId = this.organizationId
+    const requestedId = this.organizationId()
     this.errorMessage.set(null)
     this.organizationsService.get(requestedId).subscribe({
       next: (organization) => {
-        if (requestedId === this.organizationId) {
+        if (requestedId === this.organizationId()) {
           this.organization.set(organization)
           this.pageTitle.title.set(organization.display_name)
           this.loading.set(false)
         }
       },
       error: () => {
-        if (requestedId === this.organizationId) {
+        if (requestedId === this.organizationId()) {
           this.loading.set(false)
           this.errorMessage.set("Échec du chargement de l'organisation.")
         }
       },
     })
     this.organizationsService.getIdentityProvider(requestedId).subscribe((config) => {
-      if (requestedId !== this.organizationId) {
+      if (requestedId !== this.organizationId()) {
         return
       }
       if (config.type === 'ldap') {
@@ -120,26 +122,37 @@ export class OrganizationDetail {
         this.clientId.set(config.client_id)
         this.clientSecretSet.set(config.client_secret_set)
       } else {
+        // Reset every field, or a previous org's config lingers on screen for one with none.
         this.identityProviderConfigured.set(false)
+        this.selectedProviderType.set('ldap')
+        this.serverUrl.set('')
+        this.bindDn.set('')
+        this.bindPassword.set('')
+        this.bindPasswordSet.set(false)
+        this.userSearchBase.set('')
+        this.userSearchFilter.set('')
+        this.emailAttribute.set('')
+        this.issuerUrl.set('')
+        this.clientId.set('')
+        this.clientSecret.set('')
+        this.clientSecretSet.set(false)
       }
     })
   }
 
   save(): void {
-    this.saved.set(false)
-    this.errorMessage.set(null)
     if (this.hasErrors()) {
       return
     }
     this.saving.set(true)
     const request$ =
       this.selectedProviderType() === 'oidc'
-        ? this.organizationsService.setOidcIdentityProvider(this.organizationId, {
+        ? this.organizationsService.setOidcIdentityProvider(this.organizationId(), {
             issuer_url: this.issuerUrl(),
             client_id: this.clientId(),
             client_secret: this.clientSecret().trim() === '' ? undefined : this.clientSecret(),
           })
-        : this.organizationsService.setLdapIdentityProvider(this.organizationId, {
+        : this.organizationsService.setLdapIdentityProvider(this.organizationId(), {
             server_url: this.serverUrl(),
             bind_dn: this.bindDn(),
             bind_password: this.bindPassword().trim() === '' ? undefined : this.bindPassword(),
@@ -150,7 +163,6 @@ export class OrganizationDetail {
     request$.subscribe({
       next: () => {
         this.saving.set(false)
-        this.saved.set(true)
         this.identityProviderConfigured.set(true)
         if (this.selectedProviderType() === 'oidc') {
           this.clientSecretSet.set(true)
@@ -159,10 +171,11 @@ export class OrganizationDetail {
           this.bindPasswordSet.set(true)
           this.bindPassword.set('')
         }
+        this.toastService.success('Configuration enregistrée.')
       },
       error: () => {
         this.saving.set(false)
-        this.errorMessage.set('Échec de la mise à jour de la configuration.')
+        this.toastService.error('Échec de la mise à jour de la configuration.')
       },
     })
   }
@@ -172,8 +185,7 @@ export class OrganizationDetail {
       return
     }
     this.clearing.set(true)
-    this.errorMessage.set(null)
-    this.organizationsService.clearIdentityProvider(this.organizationId).subscribe({
+    this.organizationsService.clearIdentityProvider(this.organizationId()).subscribe({
       next: () => {
         this.clearing.set(false)
         this.identityProviderConfigured.set(false)
@@ -186,10 +198,11 @@ export class OrganizationDetail {
         this.issuerUrl.set('')
         this.clientId.set('')
         this.clientSecretSet.set(false)
+        this.toastService.success('Retour aux comptes locaux effectué.')
       },
       error: () => {
         this.clearing.set(false)
-        this.errorMessage.set('Échec de la suppression de la configuration.')
+        this.toastService.error('Échec de la suppression de la configuration.')
       },
     })
   }

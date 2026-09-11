@@ -2,27 +2,31 @@ import { Injectable, inject } from '@angular/core'
 import { Observable } from 'rxjs'
 import { BRANDING_PORT } from './branding.port'
 
-/** `logoUrl`/`faviconUrl` always resolve — the operator's upload, or the default. */
 @Injectable({ providedIn: 'root' })
 export class BrandingService {
   private readonly port = inject(BRANDING_PORT)
 
-  readonly logoUrl = '/api/branding/logo'
-  readonly faviconUrl = '/api/branding/favicon'
-
-  uploadLogo(file: File): Observable<void> {
-    return this.port.uploadLogo(file)
+  getLogo(organizationId?: string): Observable<Blob> {
+    return this.port.getLogo(organizationId)
   }
 
-  resetLogo(): Observable<void> {
-    return this.port.resetLogo()
+  uploadLogo(file: File, organizationId?: string): Observable<void> {
+    return this.port.uploadLogo(file, organizationId)
   }
 
-  uploadFavicon(file: File): Observable<void> {
-    return this.port.uploadFavicon(file)
+  resetLogo(organizationId?: string): Observable<void> {
+    return this.port.resetLogo(organizationId)
   }
 
-  resetFavicon(): Observable<void> {
-    return this.port.resetFavicon()
+  getFavicon(organizationId?: string): Observable<Blob> {
+    return this.port.getFavicon(organizationId)
+  }
+
+  uploadFavicon(file: File, organizationId?: string): Observable<void> {
+    return this.port.uploadFavicon(file, organizationId)
+  }
+
+  resetFavicon(organizationId?: string): Observable<void> {
+    return this.port.resetFavicon(organizationId)
   }
 }

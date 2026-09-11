@@ -1,0 +1,15 @@
+.organizations-page {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+
+  &__list {
+    flex: 0 0 320px;
+    min-width: 0;
+  }
+
+  &__detail {
+    flex: 1;
+    min-width: 0;
+  }
+}

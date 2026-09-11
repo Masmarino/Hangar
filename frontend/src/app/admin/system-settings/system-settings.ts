@@ -1,7 +1,16 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core'
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core'
 import { FormsModule } from '@angular/forms'
 import { Button, Card, Checkbox, GbtInput } from '@masmarino/gabarit'
 import { SystemSettingsService } from '../application/system-settings.service'
+import { ToastService } from '../../shared/toast.service'
 
 interface FieldSpec {
   key: 'maxLoginAttempts' | 'loginAttemptWindowSeconds' | 'sessionTtlHours'
@@ -25,8 +34,12 @@ const FIELDS: FieldSpec[] = [
   styleUrl: './system-settings.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SystemSettingsAdmin implements OnInit {
+export class SystemSettingsAdmin {
   private readonly settingsService = inject(SystemSettingsService)
+  private readonly toastService = inject(ToastService)
+
+  /** Set only when embedded in an organization's own admin page — scopes read/write to it. */
+  readonly organizationId = input<string | undefined>(undefined)
 
   readonly fields = FIELDS
   readonly maxLoginAttempts = signal('')
@@ -35,16 +48,19 @@ export class SystemSettingsAdmin implements OnInit {
   readonly registrationEnabled = signal(true)
   readonly loading = signal(true)
   readonly saving = signal(false)
-  readonly saved = signal(false)
-  readonly errorMessage = signal<string | null>(null)
 
-  ngOnInit(): void {
-    this.settingsService.get().subscribe((settings) => {
-      this.maxLoginAttempts.set(String(settings.max_login_attempts))
-      this.loginAttemptWindowSeconds.set(String(settings.login_attempt_window_seconds))
-      this.sessionTtlHours.set(String(settings.session_ttl_hours))
-      this.registrationEnabled.set(settings.registration_enabled)
-      this.loading.set(false)
+  // effect(), not ngOnInit — this component is reused across organizations on the same route.
+  constructor() {
+    effect(() => {
+      const organizationId = this.organizationId()
+      this.loading.set(true)
+      this.settingsService.get(organizationId).subscribe((settings) => {
+        this.maxLoginAttempts.set(String(settings.max_login_attempts))
+        this.loginAttemptWindowSeconds.set(String(settings.login_attempt_window_seconds))
+        this.sessionTtlHours.set(String(settings.session_ttl_hours))
+        this.registrationEnabled.set(settings.registration_enabled)
+        this.loading.set(false)
+      })
     })
   }
 
@@ -79,28 +95,29 @@ export class SystemSettingsAdmin implements OnInit {
   )
 
   save(): void {
-    this.saved.set(false)
-    this.errorMessage.set(null)
     this.attemptedSave.set(true)
     if (this.hasErrors()) {
       return
     }
     this.saving.set(true)
     this.settingsService
-      .update({
-        max_login_attempts: Number(this.maxLoginAttempts()),
-        login_attempt_window_seconds: Number(this.loginAttemptWindowSeconds()),
-        session_ttl_hours: Number(this.sessionTtlHours()),
-        registration_enabled: this.registrationEnabled(),
-      })
+      .update(
+        {
+          max_login_attempts: Number(this.maxLoginAttempts()),
+          login_attempt_window_seconds: Number(this.loginAttemptWindowSeconds()),
+          session_ttl_hours: Number(this.sessionTtlHours()),
+          registration_enabled: this.registrationEnabled(),
+        },
+        this.organizationId(),
+      )
       .subscribe({
         next: () => {
           this.saving.set(false)
-          this.saved.set(true)
+          this.toastService.success('Paramètres enregistrés.')
         },
         error: () => {
           this.saving.set(false)
-          this.errorMessage.set('Échec de la mise à jour des paramètres.')
+          this.toastService.error('Échec de la mise à jour des paramètres.')
         },
       })
   }

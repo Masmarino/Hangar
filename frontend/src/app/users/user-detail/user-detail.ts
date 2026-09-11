@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router'
 import { HttpErrorResponse } from '@angular/common/http'
 import { FormsModule } from '@angular/forms'
 import { catchError, forkJoin, map, of } from 'rxjs'
-import { Button, Card, Select, Table, TableColumn } from '@masmarino/gabarit'
+import { Button, Card, Select, Table, TableColumn, Tooltip } from '@masmarino/gabarit'
 import { PermissionRoleEditor } from '../../repositories/permission-role-editor/permission-role-editor'
 import { PermissionsService } from '../../repositories/application/permissions.service'
 import {
@@ -19,11 +19,12 @@ import { UsersService } from '../application/users.service'
 import { UserSummary } from '../domain/user.entity'
 import { formatSelectedCount } from '../../shared/format'
 import { MeService } from '../../shell/application/me.service'
+import { ToastService } from '../../shared/toast.service'
 
 @Component({
   selector: 'app-user-detail',
   standalone: true,
-  imports: [Table, Button, Select, PermissionRoleEditor, FormsModule, Card],
+  imports: [Table, Button, Select, PermissionRoleEditor, FormsModule, Card, Tooltip],
   templateUrl: './user-detail.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -31,13 +32,13 @@ export class UserDetail {
   private readonly route = inject(ActivatedRoute)
   private readonly router = inject(Router)
   private readonly usersService = inject(UsersService)
+  private readonly toastService = inject(ToastService)
   private readonly permissionsService = inject(PermissionsService)
   private readonly repositoriesService = inject(RepositoriesService)
   private readonly pageTitle = inject(PageTitleService)
   private readonly me = inject(MeService)
 
-  // reactive, not a one-time route.snapshot read — Angular can reuse this component across
-  // two different :id navigations, and a snapshot would keep showing the previous user
+  // Reactive, not route.snapshot — Angular reuses this component across :id navigations.
   private readonly routeUserId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('id')!)),
     {
@@ -70,11 +71,8 @@ export class UserDetail {
   }
   readonly permissions = signal<UserPermissionEntry[]>([])
   readonly editingPermission = signal<UserPermissionEntry | null>(null)
-  readonly superAdminError = signal<string | null>(null)
   readonly settingSuperAdmin = signal(false)
   readonly resendingInvitation = signal(false)
-  readonly invitationResent = signal(false)
-  readonly resendInvitationError = signal<string | null>(null)
 
   readonly repositories = signal<RepositorySummary[]>([])
   readonly repositoryOptions = computed(() =>
@@ -138,8 +136,12 @@ export class UserDetail {
         this.savingRole.set(false)
         this.editingPermission.set(null)
         this.reload()
+        this.toastService.success("Droit d'accès mis à jour.")
       },
-      error: () => this.savingRole.set(false),
+      error: () => {
+        this.savingRole.set(false)
+        this.toastService.error("Échec de la mise à jour du droit d'accès.")
+      },
     })
   }
 
@@ -154,12 +156,14 @@ export class UserDetail {
         this.savingRole.set(false)
         this.editingPermission.set(null)
         this.reload()
+        this.toastService.success("Droit d'accès révoqué.")
       },
-      error: () => this.savingRole.set(false),
+      error: () => {
+        this.savingRole.set(false)
+        this.toastService.error("Échec de la révocation du droit d'accès.")
+      },
     })
   }
-
-  readonly grantError = signal<string | null>(null)
 
   grantPermission(): void {
     const repositoryIds = this.grantRepositoryIds()
@@ -167,17 +171,17 @@ export class UserDetail {
       return
     }
     const role = this.grantRole()
-    this.grantError.set(null)
     forkJoin(
       repositoryIds.map((id) => this.permissionsService.grant(id, this.userId, role)),
     ).subscribe({
       next: () => {
         this.grantRepositoryIds.set([])
         this.reload()
+        this.toastService.success("Droit d'accès accordé.")
       },
       error: () => {
         // forkJoin only surfaces the first failure, but earlier grants in the batch may have landed
-        this.grantError.set("Échec de l'attribution sur au moins un dépôt.")
+        this.toastService.error("Échec de l'attribution sur au moins un dépôt.")
         this.reload()
       },
     })
@@ -195,16 +199,20 @@ export class UserDetail {
     if (!confirm(message)) {
       return
     }
-    this.superAdminError.set(null)
     this.settingSuperAdmin.set(true)
     this.usersService.setSuperAdmin(user.id, next).subscribe({
       next: () => {
         this.settingSuperAdmin.set(false)
         this.reload()
+        this.toastService.success(
+          next
+            ? `${user.username} est désormais super-administrateur·rice.`
+            : `${user.username} n'est plus super-administrateur·rice.`,
+        )
       },
       error: (err: HttpErrorResponse) => {
         this.settingSuperAdmin.set(false)
-        this.superAdminError.set(
+        this.toastService.error(
           err.status === 409
             ? 'Impossible de rétrograder le dernier super-administrateur.'
             : 'Impossible de modifier le statut super-administrateur.',
@@ -218,34 +226,32 @@ export class UserDetail {
     if (!user) {
       return
     }
-    this.invitationResent.set(false)
-    this.resendInvitationError.set(null)
     this.resendingInvitation.set(true)
     this.usersService.resendInvitation(user.id).subscribe({
       next: () => {
         this.resendingInvitation.set(false)
-        this.invitationResent.set(true)
+        this.toastService.success('Invitation renvoyée.')
       },
       error: () => {
         this.resendingInvitation.set(false)
-        this.resendInvitationError.set(
+        this.toastService.error(
           "Échec de l'envoi de l'invitation. Vérifiez la configuration du serveur mail.",
         )
       },
     })
   }
 
-  readonly deleteUserError = signal<string | null>(null)
-
   deleteUser(): void {
     const user = this.user()
     if (!user || !confirm(`Supprimer l'utilisateur "${user.username}" ?`)) {
       return
     }
-    this.deleteUserError.set(null)
     this.usersService.delete(user.id).subscribe({
-      next: () => this.router.navigate(['/users']),
-      error: () => this.deleteUserError.set("Échec de la suppression de l'utilisateur."),
+      next: () => {
+        this.router.navigate(['/users'])
+        this.toastService.success(`Utilisateur « ${user.username} » supprimé.`)
+      },
+      error: () => this.toastService.error("Échec de la suppression de l'utilisateur."),
     })
   }
 }

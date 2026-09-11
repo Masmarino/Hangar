@@ -10,6 +10,7 @@ import { apiTokenProviders } from '../../tokens/infrastructure/api-token.provide
 import { mfaProviders } from '../infrastructure/mfa.providers'
 import { meProviders } from '../../shell/infrastructure/me.providers'
 import { authProviders } from '../../auth/infrastructure/auth.providers'
+import { ToastService } from '../../shared/toast.service'
 
 describe('AccountPage', () => {
   function render() {
@@ -64,7 +65,10 @@ describe('AccountPage', () => {
     req.flush(null)
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain('Mot de passe changé avec succès.')
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'success',
+      message: 'Mot de passe changé avec succès.',
+    })
   })
 
   it('shows an error and keeps the new/confirm fields when the server rejects the change', () => {
@@ -81,9 +85,10 @@ describe('AccountPage', () => {
     req.flush({ error: 'invalid credentials' }, { status: 400, statusText: 'Bad Request' })
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain(
-      'Mot de passe actuel incorrect ou nouveau mot de passe invalide.',
-    )
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'Mot de passe actuel incorrect ou nouveau mot de passe invalide.',
+    })
     expect(fixture.componentInstance.form.controls.newPassword.value).toBe('new-s3cret!')
     expect(fixture.componentInstance.form.controls.confirmPassword.value).toBe('new-s3cret!')
     expect(fixture.componentInstance.form.controls.currentPassword.value).toBe('')

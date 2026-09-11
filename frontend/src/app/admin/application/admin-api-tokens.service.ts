@@ -7,8 +7,8 @@ import { ADMIN_API_TOKEN_PORT } from './admin-api-token.port'
 export class AdminApiTokensService {
   private readonly port = inject(ADMIN_API_TOKEN_PORT)
 
-  list(): Observable<AdminApiToken[]> {
-    return this.port.list()
+  list(organizationId?: string): Observable<AdminApiToken[]> {
+    return this.port.list(organizationId)
   }
 
   revoke(id: string): Observable<void> {

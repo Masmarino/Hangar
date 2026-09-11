@@ -12,16 +12,16 @@ import { METRICS_PORT } from './metrics.port'
 export class AdminMetricsService {
   private readonly port = inject(METRICS_PORT)
 
-  usage(): Observable<RepositoryUsage[]> {
-    return this.port.usage()
+  usage(organizationId?: string): Observable<RepositoryUsage[]> {
+    return this.port.usage(organizationId)
   }
 
   health(): Observable<HealthStatus> {
     return this.port.health()
   }
 
-  stats(): Observable<AdminStats> {
-    return this.port.stats()
+  stats(organizationId?: string): Observable<AdminStats> {
+    return this.port.stats(organizationId)
   }
 
   history(days?: number): Observable<MetricsSnapshot[]> {

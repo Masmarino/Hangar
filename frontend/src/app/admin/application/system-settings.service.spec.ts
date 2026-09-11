@@ -28,6 +28,6 @@ describe('SystemSettingsService', () => {
     const update = vi.fn().mockReturnValue(of(undefined))
     setup({ update }).update(settings)
 
-    expect(update).toHaveBeenCalledWith(settings)
+    expect(update).toHaveBeenCalledWith(settings, undefined)
   })
 })

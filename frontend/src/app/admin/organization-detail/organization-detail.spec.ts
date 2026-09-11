@@ -1,12 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing'
 import { By } from '@angular/platform-browser'
-import { ActivatedRoute, convertToParamMap } from '@angular/router'
 import { of, throwError } from 'rxjs'
 import { OrganizationDetail } from './organization-detail'
 import { OrganizationsService } from '../application/organizations.service'
 import { OrganizationMembersService } from '../application/organization-members.service'
 import { OrganizationMembers } from '../organization-members/organization-members'
 import { PageTitleService } from '../../shell/page-title.service'
+import { ToastService } from '../../shared/toast.service'
+import { Tooltip } from '@masmarino/gabarit'
 
 describe('OrganizationDetail', () => {
   let fixture: ComponentFixture<OrganizationDetail>
@@ -19,36 +20,39 @@ describe('OrganizationDetail', () => {
     clearIdentityProvider: ReturnType<typeof vi.fn>
   }
 
-  function setup() {
-    // This project's test runner (Angular's vitest-based unit-test builder) has no
-    // `jasmine` global to provide `createSpyObj` — hand-rolled `vi.fn()` spies stand in.
-    organizationsServiceSpy = {
+  function freshSpy() {
+    // No jasmine here (vitest-based runner) — hand-rolled vi.fn() spies stand in.
+    return {
       get: vi.fn(),
       getIdentityProvider: vi.fn(),
       setLdapIdentityProvider: vi.fn(),
       setOidcIdentityProvider: vi.fn(),
       clearIdentityProvider: vi.fn(),
     }
-    organizationsServiceSpy.get.mockReturnValue(
-      of({ id: 'org-1', slug: 'acme', display_name: 'Acme' }),
-    )
-    organizationsServiceSpy.getIdentityProvider.mockReturnValue(of({ type: null }))
+  }
 
+  function render(organizationId = 'org-1') {
     TestBed.configureTestingModule({
       imports: [OrganizationDetail],
       providers: [
         { provide: OrganizationsService, useValue: organizationsServiceSpy },
         { provide: PageTitleService, useValue: { title: { set: vi.fn() } } },
-        {
-          provide: ActivatedRoute,
-          useValue: { paramMap: of(convertToParamMap({ id: 'org-1' })) },
-        },
         { provide: OrganizationMembersService, useValue: { list: () => of([]) } },
       ],
     })
     fixture = TestBed.createComponent(OrganizationDetail)
+    fixture.componentRef.setInput('organizationId', organizationId)
     component = fixture.componentInstance
     fixture.detectChanges()
+  }
+
+  function setup() {
+    organizationsServiceSpy = freshSpy()
+    organizationsServiceSpy.get.mockReturnValue(
+      of({ id: 'org-1', slug: 'acme', display_name: 'Acme' }),
+    )
+    organizationsServiceSpy.getIdentityProvider.mockReturnValue(of({ type: null }))
+    render()
   }
 
   it('loads the organization and its identity provider on init', () => {
@@ -60,27 +64,10 @@ describe('OrganizationDetail', () => {
   })
 
   it('shows an error and stops loading when fetching the organization fails', () => {
-    organizationsServiceSpy = {
-      get: vi.fn(),
-      getIdentityProvider: vi.fn(),
-      setLdapIdentityProvider: vi.fn(),
-      setOidcIdentityProvider: vi.fn(),
-      clearIdentityProvider: vi.fn(),
-    }
+    organizationsServiceSpy = freshSpy()
     organizationsServiceSpy.get.mockReturnValue(throwError(() => new Error('load failed')))
     organizationsServiceSpy.getIdentityProvider.mockReturnValue(of({ type: null }))
-    TestBed.configureTestingModule({
-      imports: [OrganizationDetail],
-      providers: [
-        { provide: OrganizationsService, useValue: organizationsServiceSpy },
-        { provide: PageTitleService, useValue: { title: { set: vi.fn() } } },
-        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'org-1' })) } },
-        { provide: OrganizationMembersService, useValue: { list: () => of([]) } },
-      ],
-    })
-    fixture = TestBed.createComponent(OrganizationDetail)
-    component = fixture.componentInstance
-    fixture.detectChanges()
+    render()
 
     expect(component.loading()).toBe(false)
     expect(component.errorMessage()).toBe("Échec du chargement de l'organisation.")
@@ -88,13 +75,7 @@ describe('OrganizationDetail', () => {
   })
 
   it('reflects an existing LDAP configuration', () => {
-    organizationsServiceSpy = {
-      get: vi.fn(),
-      getIdentityProvider: vi.fn(),
-      setLdapIdentityProvider: vi.fn(),
-      setOidcIdentityProvider: vi.fn(),
-      clearIdentityProvider: vi.fn(),
-    }
+    organizationsServiceSpy = freshSpy()
     organizationsServiceSpy.get.mockReturnValue(
       of({ id: 'org-1', slug: 'acme', display_name: 'Acme' }),
     )
@@ -109,22 +90,36 @@ describe('OrganizationDetail', () => {
         email_attribute: 'mail',
       }),
     )
-    TestBed.configureTestingModule({
-      imports: [OrganizationDetail],
-      providers: [
-        { provide: OrganizationsService, useValue: organizationsServiceSpy },
-        { provide: PageTitleService, useValue: { title: { set: vi.fn() } } },
-        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'org-1' })) } },
-        { provide: OrganizationMembersService, useValue: { list: () => of([]) } },
-      ],
-    })
-    fixture = TestBed.createComponent(OrganizationDetail)
-    component = fixture.componentInstance
-    fixture.detectChanges()
+    render()
 
     expect(component.identityProviderConfigured()).toBe(true)
     expect(component.serverUrl()).toBe('ldap://dc.corp.example:389')
     expect(component.bindPasswordSet()).toBe(true)
+  })
+
+  it('explains via a tooltip what reverting to local accounts does, once an identity provider is configured', () => {
+    organizationsServiceSpy = freshSpy()
+    organizationsServiceSpy.get.mockReturnValue(
+      of({ id: 'org-1', slug: 'acme', display_name: 'Acme' }),
+    )
+    organizationsServiceSpy.getIdentityProvider.mockReturnValue(
+      of({
+        type: 'ldap',
+        server_url: 'ldap://dc.corp.example:389',
+        bind_dn: 'cn=service,dc=corp,dc=example',
+        bind_password_set: true,
+        user_search_base: 'ou=people,dc=corp,dc=example',
+        user_search_filter: '(uid={username})',
+        email_attribute: 'mail',
+      }),
+    )
+    render()
+
+    const tooltip = fixture.debugElement.query(By.directive(Tooltip))
+
+    expect((tooltip.componentInstance as Tooltip).text()).toBe(
+      "Supprime la configuration du fournisseur d'identité et repasse cette organisation en comptes locaux.",
+    )
   })
 
   it('saves the LDAP configuration', () => {
@@ -169,13 +164,7 @@ describe('OrganizationDetail', () => {
   })
 
   it('reflects an existing OIDC configuration', () => {
-    organizationsServiceSpy = {
-      get: vi.fn(),
-      getIdentityProvider: vi.fn(),
-      setLdapIdentityProvider: vi.fn(),
-      setOidcIdentityProvider: vi.fn(),
-      clearIdentityProvider: vi.fn(),
-    }
+    organizationsServiceSpy = freshSpy()
     organizationsServiceSpy.get.mockReturnValue(
       of({ id: 'org-1', slug: 'acme', display_name: 'Acme' }),
     )
@@ -187,18 +176,7 @@ describe('OrganizationDetail', () => {
         client_secret_set: true,
       }),
     )
-    TestBed.configureTestingModule({
-      imports: [OrganizationDetail],
-      providers: [
-        { provide: OrganizationsService, useValue: organizationsServiceSpy },
-        { provide: PageTitleService, useValue: { title: { set: vi.fn() } } },
-        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'org-1' })) } },
-        { provide: OrganizationMembersService, useValue: { list: () => of([]) } },
-      ],
-    })
-    fixture = TestBed.createComponent(OrganizationDetail)
-    component = fixture.componentInstance
-    fixture.detectChanges()
+    render()
 
     expect(component.identityProviderConfigured()).toBe(true)
     expect(component.selectedProviderType()).toBe('oidc')
@@ -236,11 +214,14 @@ describe('OrganizationDetail', () => {
     component.userSearchFilter.set('(uid={username})')
     component.emailAttribute.set('mail')
 
+    const toastService = TestBed.inject(ToastService)
     component.save()
 
-    expect(component.errorMessage()).toBe('Échec de la mise à jour de la configuration.')
+    expect(toastService.toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'Échec de la mise à jour de la configuration.',
+    })
     expect(component.saving()).toBe(false)
-    expect(component.saved()).toBe(false)
     expect(component.identityProviderConfigured()).toBe(false)
     expect(component.bindPasswordSet()).toBe(false)
   })
@@ -255,23 +236,20 @@ describe('OrganizationDetail', () => {
     component.clientId.set('hangar')
     component.clientSecret.set('s3cret!')
 
+    const toastService = TestBed.inject(ToastService)
     component.save()
 
-    expect(component.errorMessage()).toBe('Échec de la mise à jour de la configuration.')
+    expect(toastService.toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'Échec de la mise à jour de la configuration.',
+    })
     expect(component.saving()).toBe(false)
-    expect(component.saved()).toBe(false)
     expect(component.identityProviderConfigured()).toBe(false)
     expect(component.clientSecretSet()).toBe(false)
   })
 
   it('shows an error and does not reset the form when clearing the configuration fails', () => {
-    organizationsServiceSpy = {
-      get: vi.fn(),
-      getIdentityProvider: vi.fn(),
-      setLdapIdentityProvider: vi.fn(),
-      setOidcIdentityProvider: vi.fn(),
-      clearIdentityProvider: vi.fn(),
-    }
+    organizationsServiceSpy = freshSpy()
     organizationsServiceSpy.get.mockReturnValue(
       of({ id: 'org-1', slug: 'acme', display_name: 'Acme' }),
     )
@@ -286,27 +264,20 @@ describe('OrganizationDetail', () => {
         email_attribute: 'mail',
       }),
     )
-    TestBed.configureTestingModule({
-      imports: [OrganizationDetail],
-      providers: [
-        { provide: OrganizationsService, useValue: organizationsServiceSpy },
-        { provide: PageTitleService, useValue: { title: { set: vi.fn() } } },
-        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'org-1' })) } },
-        { provide: OrganizationMembersService, useValue: { list: () => of([]) } },
-      ],
-    })
-    fixture = TestBed.createComponent(OrganizationDetail)
-    component = fixture.componentInstance
-    fixture.detectChanges()
+    render()
 
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     organizationsServiceSpy.clearIdentityProvider.mockReturnValue(
       throwError(() => new Error('clear failed')),
     )
 
+    const toastService = TestBed.inject(ToastService)
     component.clear()
 
-    expect(component.errorMessage()).toBe('Échec de la suppression de la configuration.')
+    expect(toastService.toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'Échec de la suppression de la configuration.',
+    })
     expect(component.clearing()).toBe(false)
     expect(component.identityProviderConfigured()).toBe(true)
     expect(component.serverUrl()).toBe('ldap://dc.corp.example:389')
@@ -319,5 +290,39 @@ describe('OrganizationDetail', () => {
     const membersDebugElement = fixture.debugElement.query(By.directive(OrganizationMembers))
     expect(membersDebugElement).not.toBeNull()
     expect(membersDebugElement.componentInstance.organizationId()).toBe('org-1')
+  })
+
+  it('re-fetches (and resets stale identity-provider fields) when organizationId changes to a different organization — the component is reused, not recreated, across a super-admin switching organizations', () => {
+    organizationsServiceSpy = freshSpy()
+    organizationsServiceSpy.get.mockReturnValue(
+      of({ id: 'org-1', slug: 'acme', display_name: 'Acme' }),
+    )
+    organizationsServiceSpy.getIdentityProvider.mockReturnValue(
+      of({
+        type: 'ldap',
+        server_url: 'ldap://dc.corp.example:389',
+        bind_dn: 'cn=service,dc=corp,dc=example',
+        bind_password_set: true,
+        user_search_base: 'ou=people,dc=corp,dc=example',
+        user_search_filter: '(uid={username})',
+        email_attribute: 'mail',
+      }),
+    )
+    render('org-1')
+    expect(component.identityProviderConfigured()).toBe(true)
+    expect(component.serverUrl()).toBe('ldap://dc.corp.example:389')
+
+    // org-2 has no identity provider of its own — must not still show org-1's configuration.
+    organizationsServiceSpy.get.mockReturnValue(
+      of({ id: 'org-2', slug: 'other', display_name: 'Other' }),
+    )
+    organizationsServiceSpy.getIdentityProvider.mockReturnValue(of({ type: null }))
+    fixture.componentRef.setInput('organizationId', 'org-2')
+    fixture.detectChanges()
+
+    expect(organizationsServiceSpy.get).toHaveBeenCalledWith('org-2')
+    expect(component.identityProviderConfigured()).toBe(false)
+    expect(component.serverUrl()).toBe('')
+    expect(component.bindPasswordSet()).toBe(false)
   })
 })

@@ -52,13 +52,6 @@
         (ngModelChange)="security.set($event)"
       />
 
-      @if (errorMessage(); as message) {
-        <p class="gbt-form-error" role="alert">{{ message }}</p>
-      }
-      @if (saved()) {
-        <p class="gbt-form-success" role="status">Paramètres enregistrés.</p>
-      }
-
       <gbt-button text="Enregistrer" [loading]="saving()" [disabled]="hasErrors()" (clicked)="save()" loadingLabel="Chargement en cours" />
     }
   </gbt-card>
@@ -70,20 +63,16 @@
         [ngModel]="testRecipient()"
         (ngModelChange)="testRecipient.set($event)"
       />
-      @if (testErrorMessage(); as message) {
-        <p class="gbt-form-error" role="alert">{{ message }}</p>
-      }
-      @if (testSent()) {
-        <p class="gbt-form-success" role="status">E-mail de test envoyé.</p>
-      }
-      <gbt-button
-        text="Envoyer"
-        variant="secondary"
-        [loading]="sendingTest()"
-        loadingLabel="Chargement en cours"
-        [disabled]="testRecipient().trim() === ''"
-        (clicked)="sendTest()"
-      />
+      <gbt-tooltip text="Utilise la configuration déjà enregistrée, pas les modifications du formulaire ci-dessus.">
+        <gbt-button
+          text="Envoyer"
+          variant="secondary"
+          [loading]="sendingTest()"
+          loadingLabel="Chargement en cours"
+          [disabled]="testRecipient().trim() === ''"
+          (clicked)="sendTest()"
+        />
+      </gbt-tooltip>
     </gbt-card>
   }
 </div>

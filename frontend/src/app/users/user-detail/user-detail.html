@@ -13,12 +13,6 @@
             <p>Statut : invitation en attente d'activation</p>
             @if (canManageTarget()) {
               <gbt-button text="Renvoyer l'invitation" [loading]="resendingInvitation()" (clicked)="resendInvitation()" loadingLabel="Chargement en cours" />
-              @if (invitationResent()) {
-                <p>Invitation renvoyée.</p>
-              }
-              @if (resendInvitationError(); as message) {
-                <p class="gbt-form-error" role="alert">{{ message }}</p>
-              }
             }
           }
         </div>
@@ -58,9 +52,6 @@
             [text]="grantRepositoryIds().length > 1 ? 'Accorder (' + grantRepositoryIds().length + ')' : 'Accorder'"
             (clicked)="grantPermission()"
           />
-          @if (grantError(); as message) {
-            <p class="gbt-form-error" role="alert">{{ message }}</p>
-          }
         </div>
       </div>
     </gbt-card>
@@ -80,21 +71,25 @@
 
     <div class="d-flex justify-content-end gap-4">
       @if (isSuperAdminViewer()) {
-        <gbt-button
-          [text]="user()?.is_super_admin ? 'Rétrograder' : 'Promouvoir super-administrateur'"
-          [loading]="settingSuperAdmin()"
-          loadingLabel="Chargement en cours"
-          (clicked)="setSuperAdmin()"
-        />
-        @if (superAdminError(); as message) {
-          <p class="gbt-form-error" role="alert">{{ message }}</p>
-        }
+        <gbt-tooltip
+          [text]="
+            user()?.is_super_admin
+              ? 'Retire tous les droits de super-administration.'
+              : 'Donne un accès complet à toutes les organisations et à leur administration.'
+          "
+        >
+          <gbt-button
+            [text]="user()?.is_super_admin ? 'Rétrograder' : 'Promouvoir super-administrateur'"
+            [loading]="settingSuperAdmin()"
+            loadingLabel="Chargement en cours"
+            (clicked)="setSuperAdmin()"
+          />
+        </gbt-tooltip>
       }
       @if (canManageTarget()) {
-        <gbt-button text="Supprimer l'utilisateur" variant="danger" (clicked)="deleteUser()" />
-        @if (deleteUserError(); as message) {
-          <p class="gbt-form-error" role="alert">{{ message }}</p>
-        }
+        <gbt-tooltip text="Suppression définitive du compte.">
+          <gbt-button text="Supprimer l'utilisateur" variant="danger" (clicked)="deleteUser()" />
+        </gbt-tooltip>
       }
     </div>
   }

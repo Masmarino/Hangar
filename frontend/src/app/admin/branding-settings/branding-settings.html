@@ -4,13 +4,15 @@
       Affiché sur les pages de connexion, d'activation et dans l'en-tête de l'application, ainsi
       que dans les e-mails envoyés par cette instance. PNG ou JPEG, 2 Mo maximum.
     </p>
-    <img
-      [src]="logoPreviewUrl()"
-      alt="Logo actuel"
-      class="branding-settings__logo-preview"
-      width="260"
-      height="80"
-    />
+    @if (logoPreviewUrl(); as url) {
+      <img
+        [src]="url"
+        alt="Logo actuel"
+        class="branding-settings__logo-preview"
+        width="260"
+        height="80"
+      />
+    }
     <input
       type="file"
       accept="image/png,image/jpeg"
@@ -25,12 +27,14 @@
         [disabled]="!selectedLogoFile()"
         (clicked)="uploadLogo()"
       />
-      <gbt-button
-        text="Réinitialiser"
-        variant="secondary"
-        [disabled]="uploadingLogo()"
-        (clicked)="resetLogo()"
-      />
+      <gbt-tooltip text="Revient au logo par défaut de Hangar.">
+        <gbt-button
+          text="Réinitialiser"
+          variant="secondary"
+          [disabled]="uploadingLogo()"
+          (clicked)="resetLogo()"
+        />
+      </gbt-tooltip>
     </div>
     @if (logoError(); as message) {
       <p class="gbt-form-error" role="alert">{{ message }}</p>
@@ -39,13 +43,15 @@
 
   <gbt-card heading="Favicon" icon="image">
     <p>Icône affichée dans l'onglet du navigateur. PNG, JPEG ou ICO, 2 Mo maximum.</p>
-    <img
-      [src]="faviconPreviewUrl()"
-      alt="Favicon actuel"
-      class="branding-settings__favicon-preview"
-      width="32"
-      height="32"
-    />
+    @if (faviconPreviewUrl(); as url) {
+      <img
+        [src]="url"
+        alt="Favicon actuel"
+        class="branding-settings__favicon-preview"
+        width="32"
+        height="32"
+      />
+    }
     <input
       type="file"
       accept="image/png,image/jpeg,image/x-icon,.ico"
@@ -60,12 +66,14 @@
         [disabled]="!selectedFaviconFile()"
         (clicked)="uploadFavicon()"
       />
-      <gbt-button
-        text="Réinitialiser"
-        variant="secondary"
-        [disabled]="uploadingFavicon()"
-        (clicked)="resetFavicon()"
-      />
+      <gbt-tooltip text="Revient au favicon par défaut de Hangar.">
+        <gbt-button
+          text="Réinitialiser"
+          variant="secondary"
+          [disabled]="uploadingFavicon()"
+          (clicked)="resetFavicon()"
+        />
+      </gbt-tooltip>
     </div>
     @if (faviconError(); as message) {
       <p class="gbt-form-error" role="alert">{{ message }}</p>

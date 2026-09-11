@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http'
 import { CreateRepositoryModal } from './create-repository-modal'
 import { RepositorySummary } from '../domain/repository.entity'
 import { repositoryProviders } from '../infrastructure/repository.providers'
+import { ToastService } from '../../shared/toast.service'
 
 function repo(overrides: Partial<RepositorySummary>): RepositorySummary {
   return {
@@ -203,5 +204,55 @@ describe('CreateRepositoryModal', () => {
 
     httpMock.expectOne('/api/repositories').flush(null)
     expect(created).toBe(true)
+  })
+
+  it('shows a success toast naming the repository once created', () => {
+    const { fixture, httpMock } = render()
+    fixture.componentInstance.form.controls.name.setValue('my-repo')
+
+    fixture.componentInstance.submit()
+
+    httpMock.expectOne('/api/repositories').flush(null)
+
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'success',
+      message: 'Dépôt « my-repo » créé.',
+    })
+  })
+
+  it('shows an error toast with the server message when creation fails', () => {
+    const { fixture, httpMock } = render()
+    fixture.componentInstance.form.controls.name.setValue('my-repo')
+
+    fixture.componentInstance.submit()
+
+    httpMock
+      .expectOne('/api/repositories')
+      .flush(
+        { error: 'un dépôt nommé « my-repo » existe déjà' },
+        { status: 409, statusText: 'Conflict' },
+      )
+
+    expect(fixture.componentInstance.creating()).toBe(false)
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'un dépôt nommé « my-repo » existe déjà',
+    })
+  })
+
+  it('shows a generic error toast when the server gives no message', () => {
+    const { fixture, httpMock } = render()
+    fixture.componentInstance.form.controls.name.setValue('my-repo')
+
+    fixture.componentInstance.submit()
+
+    httpMock
+      .expectOne('/api/repositories')
+      .flush(null, { status: 500, statusText: 'Internal Server Error' })
+
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'Échec de la création du dépôt.',
+    })
   })
 })

@@ -1,0 +1,38 @@
+<div class="organizations-page">
+  @if (isSuperAdmin()) {
+    <div class="organizations-page__list">
+      <app-organizations-list />
+    </div>
+  }
+
+  @if (organizationId(); as id) {
+    <div class="organizations-page__detail">
+      <gbt-tabs>
+        <gbt-tab label="Aperçu">
+          <app-organization-detail [organizationId]="id" />
+        </gbt-tab>
+        <gbt-tab label="Marque">
+          <app-branding-settings [organizationId]="id" />
+        </gbt-tab>
+        <gbt-tab label="Jetons API">
+          <app-api-tokens-admin [organizationId]="id" />
+        </gbt-tab>
+        <gbt-tab label="Historique">
+          <app-audit-log [organizationId]="id" />
+        </gbt-tab>
+        <gbt-tab label="Sécurité">
+          <app-security-log [organizationId]="id" />
+        </gbt-tab>
+        <gbt-tab label="Métriques">
+          <app-organization-metrics-page [organizationId]="id" />
+        </gbt-tab>
+        <gbt-tab label="Paramètres">
+          <app-system-settings [organizationId]="id" />
+        </gbt-tab>
+        <gbt-tab label="Serveur mail">
+          <app-smtp-settings [organizationId]="id" />
+        </gbt-tab>
+      </gbt-tabs>
+    </div>
+  }
+</div>

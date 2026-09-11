@@ -4,21 +4,21 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http'
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router'
 import { By } from '@angular/platform-browser'
-import { Table } from '@masmarino/gabarit'
+import { Table, Tooltip } from '@masmarino/gabarit'
 import { PermissionRoleEditor } from '../../repositories/permission-role-editor/permission-role-editor'
 import { UserDetail } from './user-detail'
 import { PageTitleService } from '../../shell/page-title.service'
 import { userProviders } from '../infrastructure/user.providers'
 import { repositoryProviders } from '../../repositories/infrastructure/repository.providers'
 import { MeService } from '../../shell/application/me.service'
+import { ToastService } from '../../shared/toast.service'
 
 describe('UserDetail', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  // Defaults to a super-admin viewer, matching every pre-existing test below (full
-  // access) — the organization-admin-viewer restrictions get their own dedicated tests.
+  // Defaults to a super-admin viewer — org-admin restrictions get their own tests below.
   function setup(options?: { isSuperAdmin?: boolean }) {
     TestBed.configureTestingModule({
       providers: [
@@ -266,9 +266,10 @@ describe('UserDetail', () => {
     req.flush({ error: 'conflict' }, { status: 409, statusText: 'Conflict' })
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain(
-      'Impossible de rétrograder le dernier super-administrateur.',
-    )
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'Impossible de rétrograder le dernier super-administrateur.',
+    })
   })
 
   it('shows a generic error when a non-conflict failure occurs while promoting', () => {
@@ -287,12 +288,10 @@ describe('UserDetail', () => {
     req.flush({ error: 'server error' }, { status: 500, statusText: 'Internal Server Error' })
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain(
-      'Impossible de modifier le statut super-administrateur.',
-    )
-    expect(fixture.nativeElement.textContent).not.toContain(
-      'Impossible de rétrograder le dernier super-administrateur.',
-    )
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'Impossible de modifier le statut super-administrateur.',
+    })
   })
 
   it('does not change super-admin status when the confirmation is cancelled', () => {
@@ -442,7 +441,7 @@ describe('UserDetail', () => {
       .expectOne('/api/users/user-2/permissions')
       .flush([{ repository_id: 'repo-5', repository_name: 'repo-a', format: 'npm', role: 'read' }])
 
-    expect(fixture.componentInstance.grantError()).not.toBeNull()
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({ variant: 'error' })
     expect(fixture.componentInstance.permissions().length).toBe(1)
   })
 
@@ -538,5 +537,24 @@ describe('UserDetail', () => {
       expect(fixture.nativeElement.textContent).not.toContain('Supprimer')
       expect(fixture.nativeElement.textContent).not.toContain("Renvoyer l'invitation")
     })
+  })
+
+  it('explains via tooltips what promoting to super-admin and deleting the account do', () => {
+    const { fixture, httpMock } = setup()
+    fixture.detectChanges()
+    httpMock
+      .expectOne('/api/users/user-2')
+      .flush({ id: 'user-2', username: 'florian', is_super_admin: false })
+    httpMock.expectOne('/api/users/user-2/permissions').flush([])
+    httpMock.expectOne('/api/repositories').flush([])
+    fixture.detectChanges()
+
+    const tooltips = fixture.debugElement.queryAll(By.directive(Tooltip))
+    const texts = tooltips.map((t) => (t.componentInstance as Tooltip).text())
+
+    expect(texts).toContain(
+      'Donne un accès complet à toutes les organisations et à leur administration.',
+    )
+    expect(texts).toContain('Suppression définitive du compte.')
   })
 })

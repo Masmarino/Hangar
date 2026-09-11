@@ -1,8 +1,11 @@
 import { TestBed } from '@angular/core/testing'
+import { By } from '@angular/platform-browser'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { provideHttpClient } from '@angular/common/http'
+import { Tooltip } from '@masmarino/gabarit'
 import { SmtpSettingsAdmin } from './smtp-settings'
 import { adminProviders } from '../infrastructure/admin.providers'
+import { ToastService } from '../../shared/toast.service'
 
 function render(existing: object | null = null) {
   TestBed.configureTestingModule({
@@ -94,10 +97,14 @@ describe('SmtpSettingsAdmin', () => {
       from_address: 'hangar@example.com',
       security: 'start_tls',
     })
+    const toastService = TestBed.inject(ToastService)
     req.flush(null)
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain('Paramètres enregistrés.')
+    expect(toastService.toasts().at(-1)).toMatchObject({
+      variant: 'success',
+      message: 'Paramètres SMTP enregistrés.',
+    })
     expect(fixture.componentInstance.password()).toBe('')
     expect(fixture.componentInstance.passwordSet()).toBe(true)
   })
@@ -147,7 +154,7 @@ describe('SmtpSettingsAdmin', () => {
     expect(fixture.componentInstance.hasErrors()).toBe(true)
   })
 
-  it('shows a generic error message when the save request fails', () => {
+  it('shows a generic error toast when the save request fails', () => {
     const { fixture, httpMock } = render(null)
     fixture.componentInstance.host.set('smtp.example.com')
     fixture.componentInstance.username.set('hangar@example.com')
@@ -156,14 +163,16 @@ describe('SmtpSettingsAdmin', () => {
 
     fixture.componentInstance.save()
 
+    const toastService = TestBed.inject(ToastService)
     httpMock
       .expectOne('/api/admin/settings/smtp')
       .flush(null, { status: 400, statusText: 'Bad Request' })
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain(
-      'Échec de la mise à jour des paramètres SMTP.',
-    )
+    expect(toastService.toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'Échec de la mise à jour des paramètres SMTP.',
+    })
   })
 
   it('sends a test email to the given recipient', () => {
@@ -183,13 +192,17 @@ describe('SmtpSettingsAdmin', () => {
     const req = httpMock.expectOne('/api/admin/settings/smtp/test')
     expect(req.request.method).toBe('POST')
     expect(req.request.body).toEqual({ to: 'admin@example.com' })
+    const toastService = TestBed.inject(ToastService)
     req.flush(null)
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain('E-mail de test envoyé.')
+    expect(toastService.toasts().at(-1)).toMatchObject({
+      variant: 'success',
+      message: 'E-mail de test envoyé.',
+    })
   })
 
-  it('shows an error message when the test email fails to send', () => {
+  it('shows an error toast when the test email fails to send', () => {
     const { fixture, httpMock } = render({
       host: 'smtp.example.com',
       port: 587,
@@ -203,11 +216,52 @@ describe('SmtpSettingsAdmin', () => {
 
     fixture.componentInstance.sendTest()
 
+    const toastService = TestBed.inject(ToastService)
     httpMock
       .expectOne('/api/admin/settings/smtp/test')
       .flush(null, { status: 500, statusText: 'Internal Server Error' })
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain("Échec de l'envoi de l'e-mail de test.")
+    expect(toastService.toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: "Échec de l'envoi de l'e-mail de test. Vérifiez la configuration.",
+    })
+  })
+
+  it('re-fetches (and resets stale fields) when organizationId changes to a different organization — the component is reused, not recreated, across a super-admin switching organizations', () => {
+    const { fixture, httpMock } = render(null)
+    fixture.componentRef.setInput('organizationId', 'org-1')
+    fixture.detectChanges()
+    httpMock.expectOne('/api/admin/settings/smtp?organization_id=org-1').flush({
+      host: 'org1.example.com',
+      port: 587,
+      username: 'org1@example.com',
+      from_name: 'Org1',
+      from_address: 'org1@example.com',
+      security: 'start_tls',
+      password_set: true,
+    })
+    fixture.detectChanges()
+    expect(fixture.componentInstance.host()).toBe('org1.example.com')
+
+    fixture.componentRef.setInput('organizationId', 'org-2')
+    fixture.detectChanges()
+    // org-2 has no SMTP configured — must not still show org-1's settings.
+    httpMock.expectOne('/api/admin/settings/smtp?organization_id=org-2').flush(null)
+    fixture.detectChanges()
+
+    expect(fixture.componentInstance.host()).toBe('')
+    expect(fixture.componentInstance.fromName()).toBe('Hangar')
+    expect(fixture.componentInstance.passwordSet()).toBe(false)
+  })
+
+  it('explains via a tooltip that the test email uses the saved configuration, not the unsaved form', () => {
+    const { fixture } = render(null)
+
+    const tooltip = fixture.debugElement.query(By.directive(Tooltip))
+
+    expect((tooltip.componentInstance as Tooltip).text()).toBe(
+      'Utilise la configuration déjà enregistrée, pas les modifications du formulaire ci-dessus.',
+    )
   })
 })

@@ -95,13 +95,6 @@
           />
         }
 
-        @if (errorMessage(); as message) {
-          <p class="gbt-form-error" role="alert">{{ message }}</p>
-        }
-        @if (saved()) {
-          <p>Configuration enregistrée.</p>
-        }
-
         <gbt-button
           text="Enregistrer"
           [loading]="saving()"
@@ -110,13 +103,15 @@
           (clicked)="save()"
         />
         @if (identityProviderConfigured()) {
-          <gbt-button
-            text="Revenir aux comptes locaux"
-            variant="secondary"
-            [loading]="clearing()"
-            loadingLabel="Suppression…"
-            (clicked)="clear()"
-          />
+          <gbt-tooltip text="Supprime la configuration du fournisseur d'identité et repasse cette organisation en comptes locaux.">
+            <gbt-button
+              text="Revenir aux comptes locaux"
+              variant="secondary"
+              [loading]="clearing()"
+              loadingLabel="Suppression…"
+              (clicked)="clear()"
+            />
+          </gbt-tooltip>
         }
       </div>
     </gbt-card>
@@ -124,7 +119,7 @@
     <gbt-card>
       <div class="stack">
         <h3>Membres</h3>
-        <app-organization-members [organizationId]="routeOrganizationId()" />
+        <app-organization-members [organizationId]="organizationId()" />
       </div>
     </gbt-card>
   } @else if (errorMessage(); as message) {

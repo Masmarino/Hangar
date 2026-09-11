@@ -1,10 +1,6 @@
 <div class="container">
   <a [routerLink]="['/repositories', repositoryId]" class="package-detail-page__back">← Retour au dépôt</a>
 
-  @if (deleteError(); as message) {
-    <p class="gbt-form-error" role="alert">{{ message }}</p>
-  }
-
   @if (loading()) {
     <p>Chargement…</p>
   } @else if (format === 'npm' && npmDetails(); as details) {

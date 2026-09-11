@@ -9,7 +9,7 @@ import {
 } from '@angular/core'
 import { FormsModule } from '@angular/forms'
 import { firstValueFrom } from 'rxjs'
-import { Button, GbtInput } from '@masmarino/gabarit'
+import { Button, GbtInput, Tooltip } from '@masmarino/gabarit'
 import { AuthService } from '../application/auth.service'
 import { createPasskeyCredential, passkeysSupported } from '../../shared/webauthn-browser'
 
@@ -19,7 +19,7 @@ type SetupStep = 'choice' | 'totp-enroll' | 'backup-codes' | 'passkey'
 @Component({
   selector: 'app-mfa-enrollment',
   standalone: true,
-  imports: [FormsModule, GbtInput, Button],
+  imports: [FormsModule, GbtInput, Button, Tooltip],
   templateUrl: './mfa-enrollment.html',
   styleUrl: './mfa-enrollment.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

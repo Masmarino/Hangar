@@ -37,9 +37,19 @@ pub fn router() -> Router<AppState> {
         .route("/api/admin/import/configuration", axum::routing::post(import_configuration))
 }
 
-/// A super-admin manages whichever organization the request's domain resolves to; a non-super-admin can only ever manage their own, regardless of which domain the request came in on. Same helper as `routes/branding.rs`.
-fn target_organization_id(user: &AuthUser, resolved_org: &ResolvedOrganization) -> Uuid {
-    if user.is_super_admin { resolved_org.0.id } else { user.organization_id }
+/// A super-admin can target any org via `requested`; anyone else always gets their own.
+fn target_organization_id(user: &AuthUser, resolved_org: &ResolvedOrganization, requested: Option<Uuid>) -> Uuid {
+    if user.is_super_admin { requested.unwrap_or(resolved_org.0.id) } else { user.organization_id }
+}
+
+/// `None` means "see everything" — only a super-admin can narrow via `?organization_id=`.
+fn requested_organization_override(user: &AuthUser, requested: Option<Uuid>) -> Option<Uuid> {
+    if user.is_super_admin { requested } else { None }
+}
+
+#[derive(Deserialize)]
+struct OrgScopeParams {
+    organization_id: Option<Uuid>,
 }
 
 #[derive(Deserialize)]
@@ -50,6 +60,7 @@ struct AuditQueryParams {
     actor_id: Option<Uuid>,
     from: Option<DateTime<Utc>>,
     to: Option<DateTime<Utc>>,
+    organization_id: Option<Uuid>,
 }
 
 #[derive(Serialize)]
@@ -94,7 +105,8 @@ async fn list_audit_events(
     user: AuthUser,
     Query(params): Query<AuditQueryParams>,
 ) -> Result<Json<Vec<AuditEntryResponse>>, (StatusCode, Json<ErrorResponse>)> {
-    require_organization_admin(&user, user.organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
+    let scope = requested_organization_override(&user, params.organization_id);
+    require_organization_admin(&user, scope.unwrap_or(user.organization_id)).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     let filter = AuditQueryFilter {
         aggregate_type: params.aggregate_type,
         exclude_aggregate_type: params.exclude_aggregate_type,
@@ -104,12 +116,13 @@ async fn list_audit_events(
         to: params.to,
     };
     let entries = state.query_audit_log.execute(filter).await.map_err(|e| application_error_response("failed to query audit log", e))?;
-    let entries = if user.is_super_admin {
-        entries
-    } else {
+    let target_org = scope.or_else(|| (!user.is_super_admin).then_some(user.organization_id));
+    let entries = if let Some(target_org) = target_org {
         // Resolved concurrently — up to 200 entries, one round trip at a time would add up.
         let organizations = futures::future::join_all(entries.iter().map(|entry| organization_for_audit_entry(&state, entry))).await;
-        entries.into_iter().zip(organizations).filter(|(_, org)| *org == Some(user.organization_id)).map(|(entry, _)| entry).collect()
+        entries.into_iter().zip(organizations).filter(|(_, org)| *org == Some(target_org)).map(|(entry, _)| entry).collect()
+    } else {
+        entries
     };
     Ok(Json(
         entries
@@ -135,14 +148,15 @@ struct RepositoryUsageResponse {
     quota_bytes: Option<i64>,
 }
 
-async fn get_metrics(State(state): State<AppState>, user: AuthUser) -> Result<Json<Vec<RepositoryUsageResponse>>, (StatusCode, Json<ErrorResponse>)> {
-    require_organization_admin(&user, user.organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
+async fn get_metrics(State(state): State<AppState>, user: AuthUser, Query(scope): Query<OrgScopeParams>) -> Result<Json<Vec<RepositoryUsageResponse>>, (StatusCode, Json<ErrorResponse>)> {
+    let target_org = requested_organization_override(&user, scope.organization_id);
+    require_organization_admin(&user, target_org.unwrap_or(user.organization_id)).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     let usages = state.get_usage_metrics.execute().await.map_err(|e| application_error_response("failed to get usage metrics", e))?;
-    let usages = if user.is_super_admin {
-        usages
-    } else {
-        let org_repository_ids = organization_repository_ids(&state, user.organization_id).await.map_err(internal_error)?;
+    let usages = if let Some(org) = target_org.or_else(|| (!user.is_super_admin).then_some(user.organization_id)) {
+        let org_repository_ids = organization_repository_ids(&state, org).await.map_err(internal_error)?;
         usages.into_iter().filter(|u| org_repository_ids.contains(&u.repository_id)).collect()
+    } else {
+        usages
     };
     Ok(Json(
         usages
@@ -255,15 +269,16 @@ struct AdminStatsResponse {
     total_active_permissions: usize,
 }
 
-async fn get_stats(State(state): State<AppState>, user: AuthUser) -> Result<Json<AdminStatsResponse>, (StatusCode, Json<ErrorResponse>)> {
-    require_organization_admin(&user, user.organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
-    let stats = if user.is_super_admin {
-        state.get_admin_stats.execute().await.map_err(|e| application_error_response("failed to get admin stats", e))?
-    } else {
-        let total_users = state.users.list_all().await.map_err(internal_error)?.into_iter().filter(|u| u.organization_id == user.organization_id).count();
-        let org_repository_ids = organization_repository_ids(&state, user.organization_id).await.map_err(internal_error)?;
+async fn get_stats(State(state): State<AppState>, user: AuthUser, Query(scope): Query<OrgScopeParams>) -> Result<Json<AdminStatsResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let target_org = requested_organization_override(&user, scope.organization_id);
+    require_organization_admin(&user, target_org.unwrap_or(user.organization_id)).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
+    let stats = if let Some(org) = target_org.or_else(|| (!user.is_super_admin).then_some(user.organization_id)) {
+        let total_users = state.users.list_all().await.map_err(internal_error)?.into_iter().filter(|u| u.organization_id == org).count();
+        let org_repository_ids = organization_repository_ids(&state, org).await.map_err(internal_error)?;
         let total_active_permissions = state.permissions.list_all().await.map_err(internal_error)?.into_iter().filter(|(_, repository_id, _)| org_repository_ids.contains(repository_id)).count();
         hangar_application::use_cases::admin::AdminStats { total_users, total_repositories: org_repository_ids.len(), total_active_permissions }
+    } else {
+        state.get_admin_stats.execute().await.map_err(|e| application_error_response("failed to get admin stats", e))?
     };
     Ok(Json(AdminStatsResponse {
         total_users: stats.total_users,
@@ -295,10 +310,14 @@ struct AdminApiTokenResponse {
     revoked_at: Option<DateTime<Utc>>,
 }
 
-async fn list_all_api_tokens(State(state): State<AppState>, user: AuthUser) -> Result<Json<Vec<AdminApiTokenResponse>>, (StatusCode, Json<ErrorResponse>)> {
-    require_organization_admin(&user, user.organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
+async fn list_all_api_tokens(State(state): State<AppState>, user: AuthUser, Query(scope): Query<OrgScopeParams>) -> Result<Json<Vec<AdminApiTokenResponse>>, (StatusCode, Json<ErrorResponse>)> {
+    let target_org = requested_organization_override(&user, scope.organization_id);
+    require_organization_admin(&user, target_org.unwrap_or(user.organization_id)).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     let tokens = state.admin_list_api_tokens.execute().await.map_err(|e| application_error_response("failed to list api tokens", e))?;
-    let tokens = if user.is_super_admin { tokens } else { tokens.into_iter().filter(|t| t.organization_id == Some(user.organization_id)).collect() };
+    let tokens = match target_org.or_else(|| (!user.is_super_admin).then_some(user.organization_id)) {
+        Some(org) => tokens.into_iter().filter(|t| t.organization_id == Some(org)).collect(),
+        None => tokens,
+    };
     Ok(Json(
         tokens
             .into_iter()
@@ -328,8 +347,8 @@ async fn admin_revoke_api_token(State(state): State<AppState>, user: AuthUser, P
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn get_system_settings(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization) -> Result<Json<SystemSettings>, (StatusCode, Json<ErrorResponse>)> {
-    let organization_id = target_organization_id(&user, &resolved_org);
+async fn get_system_settings(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, Query(scope): Query<OrgScopeParams>) -> Result<Json<SystemSettings>, (StatusCode, Json<ErrorResponse>)> {
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
     require_organization_admin(&user, organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     let settings = state.get_system_settings.execute(organization_id).await.map_err(|e| application_error_response("failed to get system settings", e))?;
     Ok(Json(settings))
@@ -339,9 +358,10 @@ async fn update_system_settings(
     State(state): State<AppState>,
     user: AuthUser,
     resolved_org: ResolvedOrganization,
+    Query(scope): Query<OrgScopeParams>,
     Json(settings): Json<SystemSettings>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
-    let organization_id = target_organization_id(&user, &resolved_org);
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
     require_organization_admin(&user, organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     state.update_system_settings.execute(organization_id, settings).await.map_err(|e| application_error_response("failed to update system settings", e))?;
     Ok(StatusCode::NO_CONTENT)
@@ -358,8 +378,8 @@ struct SmtpSettingsResponse {
     password_set: bool,
 }
 
-async fn get_smtp_settings(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization) -> Result<Json<Option<SmtpSettingsResponse>>, (StatusCode, Json<ErrorResponse>)> {
-    let organization_id = target_organization_id(&user, &resolved_org);
+async fn get_smtp_settings(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, Query(scope): Query<OrgScopeParams>) -> Result<Json<Option<SmtpSettingsResponse>>, (StatusCode, Json<ErrorResponse>)> {
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
     require_organization_admin(&user, organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     let settings = state.get_smtp_settings.execute(organization_id).await.map_err(|e| application_error_response("failed to get SMTP settings", e))?;
     Ok(Json(settings.map(|s| SmtpSettingsResponse {
@@ -389,9 +409,10 @@ async fn update_smtp_settings(
     State(state): State<AppState>,
     user: AuthUser,
     resolved_org: ResolvedOrganization,
+    Query(scope): Query<OrgScopeParams>,
     Json(body): Json<UpdateSmtpSettingsRequest>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
-    let organization_id = target_organization_id(&user, &resolved_org);
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
     require_organization_admin(&user, organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     state
         .update_smtp_settings
@@ -406,8 +427,8 @@ struct SendTestEmailRequest {
     to: String,
 }
 
-async fn send_test_email(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, Json(body): Json<SendTestEmailRequest>) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
-    let organization_id = target_organization_id(&user, &resolved_org);
+async fn send_test_email(State(state): State<AppState>, user: AuthUser, resolved_org: ResolvedOrganization, Query(scope): Query<OrgScopeParams>, Json(body): Json<SendTestEmailRequest>) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
+    let organization_id = target_organization_id(&user, &resolved_org, scope.organization_id);
     require_organization_admin(&user, organization_id).map_err(|status| (status, Json(ErrorResponse { error: "forbidden".to_string() })))?;
     state.send_test_email.execute(organization_id, &body.to).await.map_err(|e| application_error_response("failed to send test email", e))?;
     Ok(StatusCode::NO_CONTENT)
@@ -743,6 +764,33 @@ mod tests {
     }
 
     #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn a_super_admin_can_target_a_specific_organizations_audit_log_via_the_query_param(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        let acme_admin_id = state.create_user.execute(acme_id, "acme-admin", "sup3r-s3cret!", false).await.unwrap();
+        state.create_repository.execute(acme_id, "acme-repo", RepositoryFormat::Npm, RepositoryType::Hosted, None, None, None, acme_admin_id).await.unwrap();
+        state.create_user.execute(Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(), "admin", "sup3r-s3cret!", true).await.unwrap();
+        let token = state.authenticate_user.execute("admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/audit/events?exclude_aggregate_type=Security&organization_id={acme_id}"))
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert!(!json.as_array().unwrap().is_empty(), "must see acme's own RepositoryCreated event when explicitly scoped to acme");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
     async fn an_organization_admin_sees_a_package_event_for_their_own_repository(pool: sqlx::PgPool) {
         let state = AppState::build(pool, &test_config());
         let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
@@ -947,6 +995,35 @@ mod tests {
     }
 
     #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn a_super_admin_can_target_a_specific_organizations_metrics_via_the_query_param(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        let acme_admin_id = state.create_user.execute(acme_id, "acme-admin", "sup3r-s3cret!", false).await.unwrap();
+        state.create_repository.execute(acme_id, "acme-repo", RepositoryFormat::Npm, RepositoryType::Hosted, None, None, None, acme_admin_id).await.unwrap();
+        state.create_user.execute(Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(), "admin", "sup3r-s3cret!", true).await.unwrap();
+        let token = state.authenticate_user.execute("admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/admin/metrics?organization_id={acme_id}"))
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let usages = json.as_array().unwrap();
+        assert_eq!(usages.len(), 1);
+        assert_eq!(usages[0]["name"], "acme-repo");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
     async fn a_regular_organization_member_cannot_read_usage_metrics(pool: sqlx::PgPool) {
         let state = AppState::build(pool, &test_config());
         let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
@@ -1085,6 +1162,61 @@ mod tests {
         assert_eq!(json["total_users"], 2);
         assert_eq!(json["total_repositories"], 1);
         assert_eq!(json["total_active_permissions"], 1);
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn a_super_admin_can_target_a_specific_organizations_stats_via_the_query_param(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        state.create_user.execute(acme_id, "acme-member", "sup3r-s3cret!", false).await.unwrap();
+        state.create_user.execute(Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(), "admin", "sup3r-s3cret!", true).await.unwrap();
+        let token = state.authenticate_user.execute("admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state);
+
+        // No `host` header — this would otherwise resolve to the public organization.
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/admin/stats?organization_id={acme_id}"))
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["total_users"], 1, "must reflect acme's own users, not the public org's");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn an_organization_admin_cannot_use_the_organization_id_query_param_to_target_another_organizations_stats(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        let other_id = state.create_organization.execute("other", "Other Corp").await.unwrap();
+        state.create_user.execute(other_id, "other-member", "sup3r-s3cret!", false).await.unwrap();
+        let org_admin_id = state.create_user.execute(acme_id, "org-admin", "sup3r-s3cret!", false).await.unwrap();
+        state.users.set_organization_admin(org_admin_id, true).await.unwrap();
+        let token = state.authenticate_user.execute("org-admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/admin/stats?organization_id={other_id}"))
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["total_users"], 1, "must reflect acme's own single user (org-admin), never other_id's");
     }
 
     #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
@@ -1299,6 +1431,35 @@ mod tests {
     }
 
     #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn a_super_admin_can_target_a_specific_organizations_tokens_via_the_query_param(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        let acme_member_id = state.create_user.execute(acme_id, "acme-member", "sup3r-s3cret!", false).await.unwrap();
+        state.create_api_token.execute(acme_member_id, "acme laptop").await.unwrap();
+        state.create_user.execute(Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(), "admin", "sup3r-s3cret!", true).await.unwrap();
+        let token = state.authenticate_user.execute("admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/admin/tokens?organization_id={acme_id}"))
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let tokens: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let tokens = tokens.as_array().unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0]["username"], "acme-member");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
     async fn an_organization_admin_can_revoke_a_token_in_their_own_organization(pool: sqlx::PgPool) {
         let state = AppState::build(pool, &test_config());
         let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
@@ -1441,9 +1602,7 @@ mod tests {
         let persisted = state.get_system_settings.execute(hangar_domain::organization::PUBLIC_ORGANIZATION_ID).await.unwrap();
         assert_eq!(persisted.max_login_attempts, 2);
 
-        // "admin" belongs to the public organization, so a login attempt against it is
-        // throttled at the just-updated 2-attempt limit — resolved live from settings on
-        // every call, not pushed into the throttle ahead of time.
+        // "admin" is in the public org, so it's throttled at the limit just set above.
         let login_request = || {
             Request::builder()
                 .method("POST")
@@ -1726,6 +1885,33 @@ mod tests {
     }
 
     #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn a_super_admin_can_target_a_specific_organizations_system_settings_via_the_query_param(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        state.create_user.execute(Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(), "admin", "sup3r-s3cret!", true).await.unwrap();
+        let token = state.authenticate_user.execute("admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state.clone());
+
+        // No `host` header — this would otherwise resolve to the public organization.
+        app.oneshot(
+            Request::builder()
+                .method("PUT")
+                .uri(format!("/api/admin/settings?organization_id={acme_id}"))
+                .header("authorization", format!("Bearer {token}"))
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::json!({ "max_login_attempts": 3, "login_attempt_window_seconds": 60, "session_ttl_hours": 2, "registration_enabled": false }).to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+        let acme_settings = state.get_system_settings.execute(acme_id).await.unwrap();
+        assert_eq!(acme_settings.max_login_attempts, 3, "?organization_id= must target that organization, not whichever one the request's domain resolves to");
+        let public_settings = state.get_system_settings.execute(hangar_domain::organization::PUBLIC_ORGANIZATION_ID).await.unwrap();
+        assert_eq!(public_settings, hangar_domain::system_settings::SystemSettings::defaults(), "the public organization must be untouched");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
     async fn a_regular_organization_member_cannot_read_or_update_system_settings(pool: sqlx::PgPool) {
         let state = AppState::build(pool, &test_config());
         let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
@@ -1790,6 +1976,78 @@ mod tests {
         let body = to_bytes(get_response.into_body(), usize::MAX).await.unwrap();
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(json["host"], "smtp.acme.example");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn a_super_admin_can_target_a_specific_organizations_smtp_settings_via_the_query_param(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        state.create_user.execute(Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(), "admin", "sup3r-s3cret!", true).await.unwrap();
+        let token = state.authenticate_user.execute("admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state);
+
+        let update_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("PUT")
+                    .uri(format!("/api/admin/settings/smtp?organization_id={acme_id}"))
+                    .header("authorization", format!("Bearer {token}"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({ "host": "smtp.acme.example", "port": 587, "username": "hangar@acme.example", "password": "s3cret!", "from_name": "Acme", "from_address": "hangar@acme.example", "security": "start_tls" })
+                            .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(update_response.status(), axum::http::StatusCode::NO_CONTENT);
+
+        // No `host` header on the GET either — must still resolve to acme via the query param.
+        let get_response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/admin/settings/smtp?organization_id={acme_id}"))
+                    .header("authorization", format!("Bearer {token}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(get_response.status(), axum::http::StatusCode::OK);
+        let body = to_bytes(get_response.into_body(), usize::MAX).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["host"], "smtp.acme.example");
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn an_organization_admin_cannot_use_the_organization_id_query_param_to_target_another_organizations_smtp_settings(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let acme_id = state.create_organization.execute("acme", "Acme Corp").await.unwrap();
+        let other_id = state.create_organization.execute("other", "Other Corp").await.unwrap();
+        let org_admin_id = state.create_user.execute(acme_id, "org-admin", "sup3r-s3cret!", false).await.unwrap();
+        state.users.set_organization_admin(org_admin_id, true).await.unwrap();
+        let token = state.authenticate_user.execute("org-admin", "sup3r-s3cret!").await.unwrap();
+        let app = build_router(state.clone());
+
+        app.oneshot(
+            Request::builder()
+                .method("PUT")
+                .uri(format!("/api/admin/settings/smtp?organization_id={other_id}"))
+                .header("authorization", format!("Bearer {token}"))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({ "host": "smtp.evil.example", "port": 587, "username": "x", "password": "s3cret!", "from_name": "X", "from_address": "x@x.example", "security": "start_tls" })
+                        .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+        let other_settings = state.get_smtp_settings.execute(other_id).await.unwrap();
+        assert!(other_settings.is_none(), "an organization admin must not be able to use ?organization_id= to escape their own organization");
     }
 
     #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]

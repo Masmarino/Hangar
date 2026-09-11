@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router'
 import { provideTransloco } from '@jsverse/transloco'
 import { CreateUserModal } from './create-user-modal'
 import { userProviders } from '../infrastructure/user.providers'
+import { ToastService } from '../../shared/toast.service'
 
 describe('CreateUserModal', () => {
   let httpMock: HttpTestingController
@@ -90,6 +91,48 @@ describe('CreateUserModal', () => {
       is_super_admin: false,
       email: 'florian@example.com',
       invitation_pending: true,
+    })
+  })
+
+  it('shows a success toast naming the user once created', () => {
+    const fixture = TestBed.createComponent(CreateUserModal)
+    fixture.detectChanges()
+
+    fixture.componentInstance.form.patchValue({ username: 'florian', email: 'florian@example.com' })
+    fixture.componentInstance.submit()
+
+    httpMock.expectOne('/api/users').flush({
+      id: 'user-1',
+      username: 'florian',
+      is_super_admin: false,
+      email: 'florian@example.com',
+      invitation_pending: true,
+    })
+
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'success',
+      message: 'Utilisateur « florian » créé.',
+    })
+  })
+
+  it('shows an error toast with the server message when creation fails', () => {
+    const fixture = TestBed.createComponent(CreateUserModal)
+    fixture.detectChanges()
+
+    fixture.componentInstance.form.patchValue({ username: 'florian', email: 'florian@example.com' })
+    fixture.componentInstance.submit()
+
+    httpMock
+      .expectOne('/api/users')
+      .flush(
+        { error: 'ce nom d’utilisateur est déjà pris' },
+        { status: 409, statusText: 'Conflict' },
+      )
+
+    expect(fixture.componentInstance.creating()).toBe(false)
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'ce nom d’utilisateur est déjà pris',
     })
   })
 })

@@ -1,8 +1,4 @@
 <div class="container">
-  @if (revokeError(); as message) {
-    <p class="gbt-form-error" role="alert">{{ message }}</p>
-  }
-
   <gbt-card heading="Jetons actifs" icon="key">
     @if (activeTokens().length === 0) {
       <p>Aucun jeton actif.</p>
@@ -25,12 +21,14 @@
               <td>{{ token.created_at | date: 'short' }}</td>
               <td>{{ token.last_used_at ? (token.last_used_at | date: 'short') : 'Jamais' }}</td>
               <td class="api-tokens__actions">
-                <gbt-button
-                  text="Révoquer"
-                  variant="danger"
-                  size="small"
-                  (clicked)="revoke(token)"
-                />
+                <gbt-tooltip text="Le jeton cessera immédiatement de fonctionner, définitivement.">
+                  <gbt-button
+                    text="Révoquer"
+                    variant="danger"
+                    size="small"
+                    (clicked)="revoke(token)"
+                  />
+                </gbt-tooltip>
               </td>
             </tr>
           }

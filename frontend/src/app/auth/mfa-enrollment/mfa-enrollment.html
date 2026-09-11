@@ -6,20 +6,24 @@
       <p class="gbt-form-error" role="alert">{{ message }}</p>
     }
     <div class="auth-layout__actions">
-      <gbt-button
-        text="Application d'authentification (TOTP)"
-        [loading]="submitting()"
-        loadingLabel="Chargement en cours"
-        [disabled]="submitting()"
-        (clicked)="chooseTotpSetup()"
-      />
-      @if (passkeysSupported) {
+      <gbt-tooltip text="Nécessite une application comme Google Authenticator, Authy ou 1Password.">
         <gbt-button
-          text="Clé d'accès (passkey)"
-          variant="secondary"
+          text="Application d'authentification (TOTP)"
+          [loading]="submitting()"
+          loadingLabel="Chargement en cours"
           [disabled]="submitting()"
-          (clicked)="choosePasskeySetup()"
+          (clicked)="chooseTotpSetup()"
         />
+      </gbt-tooltip>
+      @if (passkeysSupported) {
+        <gbt-tooltip text="Utilise Touch ID, Windows Hello ou une clé de sécurité physique.">
+          <gbt-button
+            text="Clé d'accès (passkey)"
+            variant="secondary"
+            [disabled]="submitting()"
+            (clicked)="choosePasskeySetup()"
+          />
+        </gbt-tooltip>
       }
     </div>
   }

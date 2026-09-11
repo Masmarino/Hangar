@@ -2,22 +2,24 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormsModule } from '@angular/forms'
 import { HttpErrorResponse } from '@angular/common/http'
 import * as QRCode from 'qrcode'
-import { Button, Card, GbtInput } from '@masmarino/gabarit'
+import { Button, Card, GbtInput, Tooltip } from '@masmarino/gabarit'
 import { MfaService } from '../application/mfa.service'
 import { MfaStatus } from '../domain/mfa.types'
+import { ToastService } from '../../shared/toast.service'
 
 type ViewState = 'loading' | 'disabled' | 'enrolling' | 'backup-codes' | 'enabled'
 
 @Component({
   selector: 'app-mfa-settings',
   standalone: true,
-  imports: [Button, Card, GbtInput, FormsModule],
+  imports: [Button, Card, GbtInput, FormsModule, Tooltip],
   templateUrl: './mfa-settings.html',
   styleUrl: './mfa-settings.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MfaSettings implements OnInit {
   private readonly mfaService = inject(MfaService)
+  private readonly toastService = inject(ToastService)
 
   readonly state = signal<ViewState>('loading')
   readonly status = signal<MfaStatus | null>(null)
@@ -92,16 +94,16 @@ export class MfaSettings implements OnInit {
       return
     }
     this.submitting.set(true)
-    this.errorMessage.set(null)
     this.mfaService.disableTotp(this.disablePassword()).subscribe({
       next: () => {
         this.submitting.set(false)
         this.disablePassword.set('')
         this.reload()
+        this.toastService.success('Double authentification désactivée.')
       },
       error: (err: HttpErrorResponse) => {
         this.submitting.set(false)
-        this.errorMessage.set(
+        this.toastService.error(
           err.status === 400 ? 'Mot de passe incorrect.' : 'Échec de la désactivation.',
         )
       },
@@ -113,16 +115,16 @@ export class MfaSettings implements OnInit {
       return
     }
     this.submitting.set(true)
-    this.errorMessage.set(null)
     this.mfaService.regenerateBackupCodes(this.regeneratePassword()).subscribe({
       next: (result) => {
         this.submitting.set(false)
         this.regeneratePassword.set('')
         this.regeneratedCodes.set(result.backup_codes)
+        this.toastService.success('Nouveaux codes de secours générés.')
       },
       error: (err: HttpErrorResponse) => {
         this.submitting.set(false)
-        this.errorMessage.set(
+        this.toastService.error(
           err.status === 400 ? 'Mot de passe incorrect.' : 'Échec de la régénération.',
         )
       },

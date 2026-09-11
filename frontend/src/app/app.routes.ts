@@ -70,58 +70,10 @@ export const routes: Routes = [
         data: { title: 'Administration' },
       },
       {
-        path: 'admin/audit',
-        loadComponent: () => import('./admin/audit-log/audit-log').then((m) => m.AuditLog),
-        canActivate: [adminGuard],
-        data: { title: 'Historique' },
-      },
-      {
-        path: 'admin/security',
-        loadComponent: () => import('./admin/security-log/security-log').then((m) => m.SecurityLog),
-        canActivate: [adminGuard],
-        data: { title: 'Journal de sécurité' },
-      },
-      {
-        path: 'admin/tokens',
-        loadComponent: () => import('./admin/api-tokens/api-tokens').then((m) => m.ApiTokensAdmin),
-        canActivate: [adminGuard],
-        data: { title: 'Jetons API' },
-      },
-      {
-        path: 'admin/settings',
-        loadComponent: () =>
-          import('./admin/system-settings/system-settings').then((m) => m.SystemSettingsAdmin),
-        canActivate: [adminGuard],
-        data: { title: 'Paramètres système' },
-      },
-      {
-        path: 'admin/smtp',
-        loadComponent: () =>
-          import('./admin/smtp-settings/smtp-settings').then((m) => m.SmtpSettingsAdmin),
-        canActivate: [adminGuard],
-        data: { title: 'Serveur mail' },
-      },
-      {
-        path: 'admin/branding',
-        loadComponent: () =>
-          import('./admin/branding-settings/branding-settings').then(
-            (m) => m.BrandingSettingsAdmin,
-          ),
-        canActivate: [adminGuard],
-        data: { title: 'Marque' },
-      },
-      {
         path: 'admin/export',
         loadComponent: () => import('./admin/export/export').then((m) => m.ExportAdmin),
         canActivate: [adminGuard],
         data: { title: 'Export' },
-      },
-      {
-        path: 'admin/metrics',
-        loadComponent: () =>
-          import('./admin/usage-metrics/usage-metrics').then((m) => m.UsageMetrics),
-        canActivate: [adminGuard],
-        data: { title: "Métriques d'usage" },
       },
       {
         path: 'admin/health',
@@ -133,80 +85,15 @@ export const routes: Routes = [
       {
         path: 'admin/organizations',
         loadComponent: () =>
-          import('./admin/organizations-list/organizations-list').then((m) => m.OrganizationsList),
+          import('./admin/organizations-page/organizations-page').then((m) => m.OrganizationsPage),
         canActivate: [adminGuard],
         data: { title: 'Organisations' },
       },
       {
         path: 'admin/organizations/:id',
         loadComponent: () =>
-          import('./admin/organization-detail/organization-detail').then(
-            (m) => m.OrganizationDetail,
-          ),
+          import('./admin/organizations-page/organizations-page').then((m) => m.OrganizationsPage),
         canActivate: [organizationAdminGuard],
-      },
-      {
-        path: 'admin/organizations/:id/branding',
-        loadComponent: () =>
-          import('./admin/organization-branding-page/organization-branding-page').then(
-            (m) => m.OrganizationBrandingPage,
-          ),
-        canActivate: [organizationAdminGuard],
-        data: { title: 'Marque' },
-      },
-      {
-        path: 'admin/organizations/:id/tokens',
-        loadComponent: () =>
-          import('./admin/organization-tokens-page/organization-tokens-page').then(
-            (m) => m.OrganizationTokensPage,
-          ),
-        canActivate: [organizationAdminGuard],
-        data: { title: 'Jetons API' },
-      },
-      {
-        path: 'admin/organizations/:id/audit',
-        loadComponent: () =>
-          import('./admin/organization-audit-page/organization-audit-page').then(
-            (m) => m.OrganizationAuditPage,
-          ),
-        canActivate: [organizationAdminGuard],
-        data: { title: 'Historique' },
-      },
-      {
-        path: 'admin/organizations/:id/security',
-        loadComponent: () =>
-          import('./admin/organization-security-page/organization-security-page').then(
-            (m) => m.OrganizationSecurityPage,
-          ),
-        canActivate: [organizationAdminGuard],
-        data: { title: 'Journal de sécurité' },
-      },
-      {
-        path: 'admin/organizations/:id/metrics',
-        loadComponent: () =>
-          import('./admin/organization-metrics-page/organization-metrics-page').then(
-            (m) => m.OrganizationMetricsPage,
-          ),
-        canActivate: [organizationAdminGuard],
-        data: { title: "Métriques d'usage" },
-      },
-      {
-        path: 'admin/organizations/:id/settings',
-        loadComponent: () =>
-          import('./admin/organization-settings-page/organization-settings-page').then(
-            (m) => m.OrganizationSettingsPage,
-          ),
-        canActivate: [organizationAdminGuard],
-        data: { title: 'Paramètres système' },
-      },
-      {
-        path: 'admin/organizations/:id/smtp',
-        loadComponent: () =>
-          import('./admin/organization-smtp-page/organization-smtp-page').then(
-            (m) => m.OrganizationSmtpPage,
-          ),
-        canActivate: [organizationAdminGuard],
-        data: { title: 'Serveur mail' },
       },
     ],
   },

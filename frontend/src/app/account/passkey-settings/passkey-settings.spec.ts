@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http'
 import { PasskeySettings } from './passkey-settings'
 import { mfaProviders } from '../infrastructure/mfa.providers'
+import { ToastService } from '../../shared/toast.service'
 
 function stubCredentialsSupported(supported: boolean): void {
   Object.defineProperty(navigator, 'credentials', {
@@ -89,8 +90,7 @@ describe('PasskeySettings', () => {
     expect(finishReq.request.body.challenge_id).toBe('challenge-1')
     expect(finishReq.request.body.name).toBe('YubiKey')
     finishReq.flush(null)
-    // firstValueFrom resolves its wrapping promise on a microtask after the
-    // Observable completes, so `reload()`'s GET doesn't fire synchronously.
+    // firstValueFrom resolves a microtask later, so reload()'s GET isn't synchronous.
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     httpMock
@@ -134,7 +134,10 @@ describe('PasskeySettings', () => {
       .flush(null, { status: 400, statusText: 'Bad Request' })
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain('Mot de passe incorrect.')
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'Mot de passe incorrect.',
+    })
   })
 
   it('shows an error and stops loading when the initial passkey list fails to load', () => {

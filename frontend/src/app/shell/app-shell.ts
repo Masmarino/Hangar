@@ -20,7 +20,7 @@ import {
   RouterOutlet,
 } from '@angular/router'
 import { filter, map } from 'rxjs'
-import { Icon, SearchBar, SearchResultCategory } from '@masmarino/gabarit'
+import { Icon, SearchBar, SearchResultCategory, Toaster } from '@masmarino/gabarit'
 import { AuthService } from '../auth/application/auth.service'
 import { MeService } from './application/me.service'
 import { PageTitleService } from './page-title.service'
@@ -29,6 +29,7 @@ import { RepositorySummary } from '../repositories/domain/repository.entity'
 import { UsersService } from '../users/application/users.service'
 import { UserSummary } from '../users/domain/user.entity'
 import { formatResultsAnnouncement } from '../shared/format'
+import { ToastService } from '../shared/toast.service'
 
 interface NavItem {
   action: string
@@ -49,23 +50,10 @@ const SUPER_ADMIN_ONLY_ACTIONS = new Set(['admin'])
 // Reachable by a super-admin or an organization admin, never a plain member.
 const STAFF_ONLY_ACTIONS = new Set(['users'])
 
-/** The 7 org-scoped admin pages, shared by an org-admin's own menu and a super-admin's contextual one when browsing that organization. */
-function organizationAdminChildren(orgLink: string): NavItem[] {
-  return [
-    { action: 'branding', icon: 'image', text: 'Marque', link: `${orgLink}/branding` },
-    { action: 'tokens', icon: 'key', text: 'Jetons API', link: `${orgLink}/tokens` },
-    { action: 'audit', icon: 'history', text: 'Historique', link: `${orgLink}/audit` },
-    { action: 'security', icon: 'shield', text: 'Sécurité', link: `${orgLink}/security` },
-    { action: 'metrics', icon: 'bar-chart', text: 'Métriques', link: `${orgLink}/metrics` },
-    { action: 'settings', icon: 'settings', text: 'Paramètres', link: `${orgLink}/settings` },
-    { action: 'smtp', icon: 'mail', text: 'Serveur mail', link: `${orgLink}/smtp` },
-  ]
-}
-
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, SearchBar],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, SearchBar, Toaster],
   templateUrl: './app-shell.html',
   styleUrl: './app-shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -78,6 +66,7 @@ export class AppShell implements OnInit {
   private readonly usersService = inject(UsersService)
   readonly me = inject(MeService)
   readonly pageTitle = inject(PageTitleService)
+  readonly toastService = inject(ToastService)
 
   readonly isLoading = signal(true)
   readonly userMenuOpen = signal(false)
@@ -127,14 +116,7 @@ export class AppShell implements OnInit {
     { initialValue: this.router.url },
   )
 
-  // Drives the contextual "Organisation" nav item when a super-admin is browsing /admin/organizations/:id.
-  private readonly browsedOrganizationId = computed(() => {
-    const match = this.currentUrl().match(/^\/admin\/organizations\/([^/]+)/)
-    return match ? match[1] : null
-  })
-
-  // Starts as '' rather than a synchronous deepestRouteTitle() call — the child route
-  // hasn't attached to the route tree yet at construction time, and walking it here throws.
+  // Starts as '' — calling deepestRouteTitle() here would throw, too early in the route tree.
   private readonly routeTitle = toSignal(
     this.router.events.pipe(
       filter((event) => event instanceof NavigationEnd),
@@ -153,37 +135,18 @@ export class AppShell implements OnInit {
         text: 'Administration',
         link: '/admin',
         children: [
-          { action: 'settings', icon: 'settings', text: 'Paramètres', link: '/admin/settings' },
-          { action: 'smtp', icon: 'mail', text: 'Serveur mail', link: '/admin/smtp' },
-          { action: 'branding', icon: 'image', text: 'Marque', link: '/admin/branding' },
-          { action: 'tokens', icon: 'key', text: 'Jetons API', link: '/admin/tokens' },
-          { action: 'export', icon: 'download', text: 'Export', link: '/admin/export' },
-          { action: 'audit', icon: 'history', text: 'Historique', link: '/admin/audit' },
-          { action: 'metrics', icon: 'bar-chart', text: 'Métriques', link: '/admin/metrics' },
-          { action: 'security', icon: 'shield', text: 'Sécurité', link: '/admin/security' },
-          { action: 'health', icon: 'activity', text: 'Santé', link: '/admin/health' },
           {
             action: 'organizations',
             icon: 'server',
             text: 'Organisations',
             link: '/admin/organizations',
           },
+          { action: 'export', icon: 'download', text: 'Export', link: '/admin/export' },
+          { action: 'health', icon: 'activity', text: 'Santé', link: '/admin/health' },
         ],
       },
     ]
     if (this.me.isSuperAdmin()) {
-      // No standing nav path to an org's own admin pages — only surfaced while browsing that org.
-      const browsedOrganizationId = this.browsedOrganizationId()
-      if (browsedOrganizationId) {
-        const orgLink = `/admin/organizations/${browsedOrganizationId}`
-        items.push({
-          action: 'organization',
-          icon: 'layout-dashboard',
-          text: 'Organisation',
-          link: orgLink,
-          children: organizationAdminChildren(orgLink),
-        })
-      }
       return items
     }
     let filtered = items.filter((item) => !SUPER_ADMIN_ONLY_ACTIONS.has(item.action))
@@ -192,13 +155,11 @@ export class AppShell implements OnInit {
     }
     const organizationId = this.me.organizationId()
     if (this.me.isOrganizationAdmin() && organizationId) {
-      const orgLink = `/admin/organizations/${organizationId}`
       filtered.push({
         action: 'organization',
         icon: 'layout-dashboard',
         text: 'Administration',
-        link: orgLink,
-        children: organizationAdminChildren(orgLink),
+        link: `/admin/organizations/${organizationId}`,
       })
     }
     return filtered
@@ -221,8 +182,7 @@ export class AppShell implements OnInit {
     })
   }
 
-  // force a refresh when a search starts, since a create/rename/delete elsewhere in the
-  // app wouldn't otherwise reach this cache — but not on every keystroke, that'd be overkill
+  // Refresh only when a search starts, not on every keystroke — catches changes made elsewhere.
   onSearchInput(query: string): void {
     if (!this.searchQuery() && query) {
       this.refreshSearchData()

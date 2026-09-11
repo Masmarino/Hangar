@@ -18,13 +18,6 @@
         (ngModelChange)="registrationEnabled.set($event)"
       />
 
-      @if (errorMessage(); as message) {
-        <p class="gbt-form-error" role="alert">{{ message }}</p>
-      }
-      @if (saved()) {
-        <p class="gbt-form-success" role="status">Paramètres enregistrés.</p>
-      }
-
       <gbt-button
         text="Enregistrer"
         [loading]="saving()"

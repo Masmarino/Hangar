@@ -7,11 +7,11 @@ import { SYSTEM_SETTINGS_PORT } from './system-settings.port'
 export class SystemSettingsService {
   private readonly port = inject(SYSTEM_SETTINGS_PORT)
 
-  get(): Observable<SystemSettings> {
-    return this.port.get()
+  get(organizationId?: string): Observable<SystemSettings> {
+    return this.port.get(organizationId)
   }
 
-  update(settings: SystemSettings): Observable<void> {
-    return this.port.update(settings)
+  update(settings: SystemSettings, organizationId?: string): Observable<void> {
+    return this.port.update(settings, organizationId)
   }
 }

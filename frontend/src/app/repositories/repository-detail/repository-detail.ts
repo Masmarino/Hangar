@@ -32,6 +32,7 @@ import { PackageTree } from '../package-tree/package-tree'
 import { PageTitleService } from '../../shell/page-title.service'
 import { FormatBytesPipe } from '../../shared/format-bytes.pipe'
 import { formatResultsAnnouncement } from '../../shared/format'
+import { ToastService } from '../../shared/toast.service'
 
 // Delay before firing a username-search request, so a fast typist doesn't generate one request per keystroke.
 const USER_SEARCH_DEBOUNCE_MS = 200
@@ -65,10 +66,10 @@ export class RepositoryDetail implements OnDestroy {
   private readonly router = inject(Router)
   private readonly repositoriesService = inject(RepositoriesService)
   private readonly permissionsService = inject(PermissionsService)
+  private readonly toastService = inject(ToastService)
   private readonly pageTitle = inject(PageTitleService)
 
-  // reactive, not a one-time route.snapshot read — Angular can reuse this component across
-  // two different :id navigations, and a snapshot would keep showing the old repository
+  // Reactive, not route.snapshot — Angular reuses this component across :id navigations.
   private readonly routeId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('id')!)),
     {
@@ -106,13 +107,11 @@ export class RepositoryDetail implements OnDestroy {
   readonly editingPermission = signal<PermissionEntry | null>(null)
 
   readonly userSearchResults = signal<UserLookup[]>([])
-  // Set when the pending grant came from picking a suggestion, so grantPermission() can
-  // skip the exact-lookup round trip. Cleared on further typing.
+  // Set from a picked suggestion so grantPermission() can skip the lookup round trip.
   private selectedUserId: string | null = null
   private userSearchTimer: ReturnType<typeof setTimeout> | undefined
 
-  // So the group-members table can show names instead of raw ids — falls back to the id
-  // itself for a member the viewer has no visibility into.
+  // Lets the group-members table show names instead of raw ids.
   readonly repositoryNamesById = signal<Map<string, string>>(new Map())
 
   readonly memberColumns: TableColumn<{ id: string }>[] = [
@@ -261,8 +260,7 @@ export class RepositoryDetail implements OnDestroy {
     }
     this.userSearchTimer = setTimeout(() => {
       this.permissionsService.searchUsers(query).subscribe((results) => {
-        // An earlier, slower request could resolve after a newer one — only apply the result
-        // that's still what the user is looking at.
+        // Guards against a slower, earlier request resolving after a newer one.
         if (query === this.grantUsername().trim()) {
           this.userSearchResults.set(results)
         }
@@ -277,7 +275,6 @@ export class RepositoryDetail implements OnDestroy {
   }
 
   readonly grantingPermission = signal(false)
-  readonly grantError = signal<string | null>(null)
 
   grantPermission(): void {
     const repository = this.repository()
@@ -285,7 +282,6 @@ export class RepositoryDetail implements OnDestroy {
       return
     }
     this.grantingPermission.set(true)
-    this.grantError.set(null)
     const resolvedId$ = this.selectedUserId
       ? of({ id: this.selectedUserId })
       : this.permissionsService.lookupUser(this.grantUsername())
@@ -298,16 +294,17 @@ export class RepositoryDetail implements OnDestroy {
             this.selectedUserId = null
             this.userSearchResults.set([])
             this.reload(repository.id)
+            this.toastService.success("Droit d'accès accordé.")
           },
           error: () => {
             this.grantingPermission.set(false)
-            this.grantError.set("Échec de l'attribution du droit d'accès.")
+            this.toastService.error("Échec de l'attribution du droit d'accès.")
           },
         })
       },
       error: () => {
         this.grantingPermission.set(false)
-        this.grantError.set('Utilisateur introuvable.')
+        this.toastService.error('Utilisateur introuvable.')
       },
     })
   }
@@ -334,8 +331,12 @@ export class RepositoryDetail implements OnDestroy {
         this.savingRole.set(false)
         this.editingPermission.set(null)
         this.reload(repository.id)
+        this.toastService.success("Droit d'accès mis à jour.")
       },
-      error: () => this.savingRole.set(false),
+      error: () => {
+        this.savingRole.set(false)
+        this.toastService.error("Échec de la mise à jour du droit d'accès.")
+      },
     })
   }
 
@@ -351,8 +352,12 @@ export class RepositoryDetail implements OnDestroy {
         this.savingRole.set(false)
         this.editingPermission.set(null)
         this.reload(repository.id)
+        this.toastService.success("Droit d'accès révoqué.")
       },
-      error: () => this.savingRole.set(false),
+      error: () => {
+        this.savingRole.set(false)
+        this.toastService.error("Échec de la révocation du droit d'accès.")
+      },
     })
   }
 
@@ -368,8 +373,12 @@ export class RepositoryDetail implements OnDestroy {
       next: () => {
         this.renaming.set(false)
         this.reload(repository.id)
+        this.toastService.success('Dépôt renommé.')
       },
-      error: () => this.renaming.set(false),
+      error: () => {
+        this.renaming.set(false)
+        this.toastService.error('Échec du renommage du dépôt.')
+      },
     })
   }
 
@@ -388,12 +397,14 @@ export class RepositoryDetail implements OnDestroy {
           this.addingMember.set(false)
           this.newMemberId.set('')
           this.reload(repository.id)
+          this.toastService.success('Dépôt membre ajouté.')
         },
-        error: () => this.addingMember.set(false),
+        error: () => {
+          this.addingMember.set(false)
+          this.toastService.error("Échec de l'ajout du dépôt membre.")
+        },
       })
   }
-
-  readonly removeMemberError = signal<string | null>(null)
 
   removeMember(memberId: string): void {
     const repository = this.repository()
@@ -404,15 +415,16 @@ export class RepositoryDetail implements OnDestroy {
     if (!confirm(`Retirer "${memberName}" du groupe ?`)) {
       return
     }
-    this.removeMemberError.set(null)
     this.repositoriesService.removeGroupMember(repository.id, memberId).subscribe({
-      next: () => this.reload(repository.id),
-      error: () => this.removeMemberError.set('Échec du retrait du dépôt membre.'),
+      next: () => {
+        this.reload(repository.id)
+        this.toastService.success(`« ${memberName} » retiré du groupe.`)
+      },
+      error: () => this.toastService.error('Échec du retrait du dépôt membre.'),
     })
   }
 
   readonly deletingRepository = signal(false)
-  readonly deleteRepositoryError = signal<string | null>(null)
 
   deleteRepository(): void {
     const repository = this.repository()
@@ -424,12 +436,14 @@ export class RepositoryDetail implements OnDestroy {
       return
     }
     this.deletingRepository.set(true)
-    this.deleteRepositoryError.set(null)
     this.repositoriesService.delete(repository.id).subscribe({
-      next: () => this.router.navigate(['/repositories']),
+      next: () => {
+        this.router.navigate(['/repositories'])
+        this.toastService.success(`Dépôt « ${repository.name} » supprimé.`)
+      },
       error: () => {
         this.deletingRepository.set(false)
-        this.deleteRepositoryError.set('Échec de la suppression du dépôt.')
+        this.toastService.error('Échec de la suppression du dépôt.')
       },
     })
   }

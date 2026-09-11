@@ -35,6 +35,15 @@
   gap: 1rem;
 }
 
+// Responsive multi-column grid for a row of summary/stat cards — mirrors admin-dashboard's own
+// stat-card grid so every metrics screen in the app lays out the same way.
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
 .d-flex {
   display: flex !important;
 }

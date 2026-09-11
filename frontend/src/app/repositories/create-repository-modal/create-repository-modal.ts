@@ -19,6 +19,7 @@ import {
 import { Button, GbtInput, Modal, Select, type SelectOption } from '@masmarino/gabarit'
 import { RepositoriesService } from '../application/repositories.service'
 import { RepositoryFormat, RepositorySummary, RepositoryType } from '../domain/repository.entity'
+import { ToastService } from '../../shared/toast.service'
 
 const FORMAT_OPTIONS: SelectOption<RepositoryFormat>[] = [
   { value: 'npm', label: 'npm' },
@@ -43,6 +44,7 @@ const BYTES_PER_MB = 1024 * 1024
 })
 export class CreateRepositoryModal implements OnInit {
   private readonly repositoriesService = inject(RepositoriesService)
+  private readonly toastService = inject(ToastService)
 
   readonly created = output<void>()
   readonly cancelled = output<void>()
@@ -61,8 +63,7 @@ export class CreateRepositoryModal implements OnInit {
     retentionKeepLastN: new FormControl('', { nonNullable: true }),
   })
 
-  // Zoneless change detection only re-renders on signal changes, so this needs to be
-  // driven from valueChanges rather than read directly inside a computed().
+  // Zoneless only re-renders on signal changes, so this can't just read the FormControl directly.
   private readonly format = toSignal(this.form.controls.format.valueChanges, {
     initialValue: this.form.controls.format.value,
   })
@@ -192,8 +193,12 @@ export class CreateRepositoryModal implements OnInit {
         next: () => {
           this.creating.set(false)
           this.created.emit()
+          this.toastService.success(`Dépôt « ${name} » créé.`)
         },
-        error: () => this.creating.set(false),
+        error: (err) => {
+          this.creating.set(false)
+          this.toastService.error(err?.error?.error ?? 'Échec de la création du dépôt.')
+        },
       })
   }
 }

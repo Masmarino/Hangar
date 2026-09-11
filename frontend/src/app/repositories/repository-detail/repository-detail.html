@@ -62,9 +62,6 @@
               />
               <gbt-button text="Ajouter" [loading]="addingMember()" (clicked)="addMember()" loadingLabel="Chargement en cours" />
             }
-            @if (removeMemberError(); as message) {
-              <p class="gbt-form-error" role="alert">{{ message }}</p>
-            }
           </gbt-card>
         </gbt-tab>
       }
@@ -110,9 +107,6 @@
               (ngModelChange)="grantRole.set($event)"
             />
             <gbt-button text="Accorder" [disabled]="!grantUsername()" [loading]="grantingPermission()" (clicked)="grantPermission()" loadingLabel="Chargement en cours" />
-            @if (grantError(); as message) {
-              <p class="gbt-form-error" role="alert">{{ message }}</p>
-            }
           </gbt-card>
 
           @if (editingPermission(); as entry) {
@@ -179,9 +173,6 @@
           <gbt-card class="repository-detail__danger" heading="Zone de danger" icon="triangle-alert">
             <p>La suppression d'un dépôt est définitive et efface tous les packages qu'il contient.</p>
             <gbt-button text="Supprimer le dépôt" variant="danger" [loading]="deletingRepository()" (clicked)="deleteRepository()" loadingLabel="Chargement en cours" />
-            @if (deleteRepositoryError(); as message) {
-              <p class="gbt-form-error" role="alert">{{ message }}</p>
-            }
           </gbt-card>
         </gbt-tab>
       }

@@ -13,6 +13,7 @@ import { MeService } from '../../shell/application/me.service'
 import { DatePipe } from '@angular/common'
 import { MfaSettings } from '../mfa-settings/mfa-settings'
 import { PasskeySettings } from '../passkey-settings/passkey-settings'
+import { ToastService } from '../../shared/toast.service'
 
 function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   const newPassword = group.get('newPassword')?.value
@@ -40,6 +41,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
 })
 export class AccountPage {
   readonly me = inject(MeService)
+  private readonly toastService = inject(ToastService)
 
   readonly form = new FormGroup(
     {
@@ -59,8 +61,6 @@ export class AccountPage {
     { validators: passwordsMatch },
   )
 
-  readonly errorMessage = signal<string | null>(null)
-  readonly successMessage = signal<string | null>(null)
   readonly submitting = signal(false)
 
   get confirmPasswordError(): string | null {
@@ -80,18 +80,16 @@ export class AccountPage {
   submit(): void {
     if (this.form.invalid || this.submitting()) return
     this.submitting.set(true)
-    this.errorMessage.set(null)
-    this.successMessage.set(null)
     const { currentPassword, newPassword } = this.form.getRawValue()
     this.me.changePassword(currentPassword, newPassword).subscribe({
       next: () => {
         this.submitting.set(false)
-        this.successMessage.set('Mot de passe changé avec succès.')
         this.form.reset({ currentPassword: '', newPassword: '', confirmPassword: '' })
+        this.toastService.success('Mot de passe changé avec succès.')
       },
       error: () => {
         this.submitting.set(false)
-        this.errorMessage.set('Mot de passe actuel incorrect ou nouveau mot de passe invalide.')
+        this.toastService.error('Mot de passe actuel incorrect ou nouveau mot de passe invalide.')
         this.form.patchValue({ currentPassword: '' })
       },
     })

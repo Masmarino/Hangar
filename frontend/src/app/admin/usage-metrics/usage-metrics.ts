@@ -2,9 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   LOCALE_ID,
-  OnInit,
   computed,
+  effect,
   inject,
+  input,
   signal,
 } from '@angular/core'
 import { Card, DimensionCard, DimensionRow, GaugeBar, Table, TableColumn } from '@masmarino/gabarit'
@@ -12,7 +13,7 @@ import { AdminMetricsService } from '../application/metrics.service'
 import { RepositoryUsage } from '../domain/metrics.entity'
 import { formatBytes } from '../../shared/format'
 
-// Beyond this many repositories the chart gets unreadable — the longest tail is folded into one "Autres" bar while the table below still lists every repository individually.
+// Past this many, the tail gets folded into one "Autres" bar — the table below still lists everything.
 const CHART_TOP_N = 15
 
 @Component({
@@ -23,8 +24,11 @@ const CHART_TOP_N = 15
   styleUrl: './usage-metrics.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class UsageMetrics implements OnInit {
+export class UsageMetrics {
   private readonly metricsService = inject(AdminMetricsService)
+
+  /** Set only when embedded in an organization's own admin page — scopes the usage to it. */
+  readonly organizationId = input<string | undefined>(undefined)
 
   readonly locale = inject(LOCALE_ID)
 
@@ -39,8 +43,7 @@ export class UsageMetrics implements OnInit {
   ]
   readonly rowId = (u: RepositoryUsage): string => u.repository_id
 
-  // Only repositories with a quota actually set have anything meaningful to
-  // show here — an unlimited repository has no threshold to warn about.
+  // Unlimited repositories have no threshold to warn about.
   readonly quotasInUse = computed(() => this.usages().filter((u) => u.quota_bytes != null))
 
   readonly chartData = computed<DimensionRow[]>(() => {
@@ -59,7 +62,12 @@ export class UsageMetrics implements OnInit {
     return data
   })
 
-  ngOnInit(): void {
-    this.metricsService.usage().subscribe((usages) => this.usages.set(usages))
+  // effect(), not ngOnInit — this component is reused across organizations on the same route.
+  constructor() {
+    effect(() => {
+      this.metricsService
+        .usage(this.organizationId())
+        .subscribe((usages) => this.usages.set(usages))
+    })
   }
 }

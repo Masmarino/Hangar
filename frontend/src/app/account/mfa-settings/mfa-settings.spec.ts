@@ -1,8 +1,11 @@
 import { TestBed } from '@angular/core/testing'
+import { By } from '@angular/platform-browser'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { provideHttpClient } from '@angular/common/http'
+import { Tooltip } from '@masmarino/gabarit'
 import { MfaSettings } from './mfa-settings'
 import { mfaProviders } from '../infrastructure/mfa.providers'
+import { ToastService } from '../../shared/toast.service'
 
 function render(status: { totp_enabled: boolean; backup_codes_remaining: number }) {
   TestBed.configureTestingModule({
@@ -94,7 +97,10 @@ describe('MfaSettings', () => {
     fixture.componentInstance.disable()
     httpMock.expectOne('/api/me/mfa/totp').flush(null, { status: 400, statusText: 'Bad Request' })
     fixture.detectChanges()
-    expect(fixture.nativeElement.textContent).toContain('Mot de passe incorrect.')
+    expect(TestBed.inject(ToastService).toasts().at(-1)).toMatchObject({
+      variant: 'error',
+      message: 'Mot de passe incorrect.',
+    })
 
     fixture.componentInstance.disablePassword.set('correct')
     fixture.componentInstance.disable()
@@ -119,5 +125,15 @@ describe('MfaSettings', () => {
     fixture.detectChanges()
 
     expect(fixture.componentInstance.regeneratedCodes()).toEqual(['cccc', 'dddd'])
+  })
+
+  it('explains via tooltips what regenerating codes and disabling TOTP do', () => {
+    const { fixture } = render({ totp_enabled: true, backup_codes_remaining: 5 })
+
+    const tooltips = fixture.debugElement.queryAll(By.directive(Tooltip))
+    const texts = tooltips.map((t) => (t.componentInstance as Tooltip).text())
+
+    expect(texts).toContain('Les anciens codes de secours cesseront de fonctionner immédiatement.')
+    expect(texts).toContain('Le compte ne demandera plus de code à la connexion.')
   })
 })

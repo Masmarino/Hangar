@@ -8,9 +8,9 @@ import {
 } from '../domain/metrics.entity'
 
 export interface MetricsPort {
-  usage(): Observable<RepositoryUsage[]>
+  usage(organizationId?: string): Observable<RepositoryUsage[]>
   health(): Observable<HealthStatus>
-  stats(): Observable<AdminStats>
+  stats(organizationId?: string): Observable<AdminStats>
   /** Evolution over time. `days` defaults to 30 server-side. */
   history(days?: number): Observable<MetricsSnapshot[]>
 }

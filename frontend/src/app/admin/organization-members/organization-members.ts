@@ -1,19 +1,21 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core'
+import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core'
 import { FormsModule } from '@angular/forms'
-import { Button, Checkbox, GbtInput } from '@masmarino/gabarit'
+import { Button, Checkbox, GbtInput, Tooltip } from '@masmarino/gabarit'
 import { OrganizationMembersService } from '../application/organization-members.service'
 import { OrganizationMember } from '../domain/organization-member.entity'
+import { ToastService } from '../../shared/toast.service'
 
 @Component({
   selector: 'app-organization-members',
   standalone: true,
-  imports: [Button, GbtInput, Checkbox, FormsModule],
+  imports: [Button, GbtInput, Checkbox, FormsModule, Tooltip],
   templateUrl: './organization-members.html',
   styleUrl: './organization-members.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OrganizationMembers implements OnInit {
+export class OrganizationMembers {
   private readonly organizationMembersService = inject(OrganizationMembersService)
+  private readonly toastService = inject(ToastService)
 
   readonly organizationId = input.required<string>()
 
@@ -27,8 +29,12 @@ export class OrganizationMembers implements OnInit {
   readonly newIsOrganizationAdmin = signal(false)
   readonly inviting = signal(false)
 
-  ngOnInit(): void {
-    this.reload()
+  // effect(), not ngOnInit — this component is reused across organizations on the same route.
+  constructor() {
+    effect(() => {
+      this.organizationId()
+      this.reload()
+    })
   }
 
   private reload(): void {
@@ -49,7 +55,6 @@ export class OrganizationMembers implements OnInit {
     this.newUsername.set('')
     this.newEmail.set('')
     this.newIsOrganizationAdmin.set(false)
-    this.errorMessage.set(null)
   }
 
   cancelAdding(): void {
@@ -61,23 +66,19 @@ export class OrganizationMembers implements OnInit {
       return
     }
     this.inviting.set(true)
-    this.errorMessage.set(null)
+    const username = this.newUsername()
     this.organizationMembersService
-      .invite(
-        this.organizationId(),
-        this.newUsername(),
-        this.newEmail(),
-        this.newIsOrganizationAdmin(),
-      )
+      .invite(this.organizationId(), username, this.newEmail(), this.newIsOrganizationAdmin())
       .subscribe({
         next: () => {
           this.inviting.set(false)
           this.addingMember.set(false)
           this.reload()
+          this.toastService.success(`${username} a été invité·e.`)
         },
         error: () => {
           this.inviting.set(false)
-          this.errorMessage.set("Échec de l'invitation.")
+          this.toastService.error("Échec de l'invitation.")
         },
       })
   }
@@ -92,12 +93,18 @@ export class OrganizationMembers implements OnInit {
     ) {
       return
     }
-    this.errorMessage.set(null)
     this.organizationMembersService
       .setOrganizationAdmin(this.organizationId(), member.id, promoting)
       .subscribe({
-        next: () => this.reload(),
-        error: () => this.errorMessage.set("Échec de la mise à jour du statut d'administrateur."),
+        next: () => {
+          this.reload()
+          this.toastService.success(
+            promoting
+              ? `${member.username} est désormais administrateur·rice de l'organisation.`
+              : `${member.username} n'est plus administrateur·rice de l'organisation.`,
+          )
+        },
+        error: () => this.toastService.error("Échec de la mise à jour du statut d'administrateur."),
       })
   }
 }

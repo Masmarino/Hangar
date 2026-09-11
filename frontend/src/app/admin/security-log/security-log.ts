@@ -2,8 +2,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   LOCALE_ID,
-  OnInit,
   computed,
+  effect,
   inject,
   input,
   signal,
@@ -46,7 +46,7 @@ interface EventTypeCount {
   styleUrl: './security-log.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SecurityLog implements OnInit {
+export class SecurityLog {
   private readonly auditService = inject(AuditService)
   private readonly usersService = inject(UsersService)
   private readonly organizationMembersService = inject(OrganizationMembersService)
@@ -106,29 +106,39 @@ export class SecurityLog implements OnInit {
   ]
   readonly rowId = (r: SecurityLogRow): string => `${r.occurred_at}|${r.event_type}|${r.actor}`
 
-  ngOnInit(): void {
-    this.auditService.query({ aggregate_type: 'Security' }).subscribe((entries) => {
-      this.entries.set(entries)
-      this.loading.set(false)
-    })
-    const organizationId = this.organizationId()
-    if (organizationId) {
-      this.organizationMembersService
-        .list(organizationId)
-        .subscribe((members) =>
-          this.usernamesById.set(new Map(members.map((m) => [m.id, m.username]))),
-        )
-    } else {
-      this.usersService
-        .list()
-        .subscribe((users) => this.usernamesById.set(new Map(users.map((u) => [u.id, u.username]))))
+  // effect(), not ngOnInit — this component is reused across organizations on the same route.
+  constructor() {
+    effect(() => {
+      const organizationId = this.organizationId()
+      this.loading.set(true)
       this.auditService
-        .blockedAccounts()
-        .subscribe((accounts) => this.blockedAccounts.set(accounts))
-    }
-    this.repositoriesService
-      .list()
-      .subscribe((repos) => this.repositoryNamesById.set(new Map(repos.map((r) => [r.id, r.name]))))
+        .query({ aggregate_type: 'Security', organization_id: organizationId })
+        .subscribe((entries) => {
+          this.entries.set(entries)
+          this.loading.set(false)
+        })
+      if (organizationId) {
+        this.organizationMembersService
+          .list(organizationId)
+          .subscribe((members) =>
+            this.usernamesById.set(new Map(members.map((m) => [m.id, m.username]))),
+          )
+      } else {
+        this.usersService
+          .list()
+          .subscribe((users) =>
+            this.usernamesById.set(new Map(users.map((u) => [u.id, u.username]))),
+          )
+        this.auditService
+          .blockedAccounts()
+          .subscribe((accounts) => this.blockedAccounts.set(accounts))
+      }
+      this.repositoriesService
+        .list()
+        .subscribe((repos) =>
+          this.repositoryNamesById.set(new Map(repos.map((r) => [r.id, r.name]))),
+        )
+    })
   }
 
   formatRemainingTime(seconds: number): string {
