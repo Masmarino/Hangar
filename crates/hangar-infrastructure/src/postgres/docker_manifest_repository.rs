@@ -230,6 +230,19 @@ impl DockerManifestRepositoryPort for PostgresDockerManifestRepository {
         Ok(rows.into_iter().filter_map(|r| DockerImageName::parse(&r.image_name).ok().map(|name| (name, r.tag))).collect())
     }
 
+    async fn list_latest_manifest_id_per_image(&self, repository_id: Uuid) -> Result<Vec<(DockerImageName, Uuid)>, DomainError> {
+        let rows = sqlx::query!(
+            "SELECT DISTINCT ON (image_name) image_name, manifest_id \
+             FROM docker_tags WHERE package_repository_id = $1 \
+             ORDER BY image_name, updated_at DESC",
+            repository_id
+        )
+        .fetch_all(&self.pool)
+        .await
+        .infra_err()?;
+        Ok(rows.into_iter().filter_map(|r| DockerImageName::parse(&r.image_name).ok().map(|name| (name, r.manifest_id))).collect())
+    }
+
     async fn list_distinct_digests_for_image(&self, repository_id: Uuid, image_name: &DockerImageName) -> Result<Vec<Digest>, DomainError> {
         let rows = sqlx::query!(
             "SELECT DISTINCT m.digest FROM docker_manifests m JOIN docker_tags t ON t.manifest_id = m.id \
@@ -506,5 +519,52 @@ mod tests {
             pairs,
             vec![(app.clone(), "latest".to_string()), (app, "v1".to_string()), (worker, "latest".to_string())]
         );
+    }
+
+    #[sqlx::test]
+    async fn list_latest_manifest_id_per_image_batches_across_every_image_in_the_repository(pool: sqlx::PgPool) {
+        let repo = PostgresDockerManifestRepository::new(pool.clone());
+        let repository_id = Uuid::new_v4();
+        seed_repository(&pool, repository_id).await;
+        let app = DockerImageName::parse("app").unwrap();
+        let worker = DockerImageName::parse("worker").unwrap();
+        let app_manifest = sample_manifest(repository_id, &app);
+        let worker_manifest = sample_manifest(repository_id, &worker);
+        repo.insert_manifest(&app_manifest, &[]).await.unwrap();
+        repo.insert_manifest(&worker_manifest, &[]).await.unwrap();
+        repo.set_tag(repository_id, &app, "latest", app_manifest.id).await.unwrap();
+        repo.set_tag(repository_id, &worker, "latest", worker_manifest.id).await.unwrap();
+
+        let mut latest = repo.list_latest_manifest_id_per_image(repository_id).await.unwrap();
+        latest.sort_by(|a, b| a.0.as_str().cmp(b.0.as_str()));
+
+        assert_eq!(latest, vec![(app, app_manifest.id), (worker, worker_manifest.id)]);
+    }
+
+    #[sqlx::test]
+    async fn list_latest_manifest_id_per_image_follows_the_most_recently_updated_tag(pool: sqlx::PgPool) {
+        let repo = PostgresDockerManifestRepository::new(pool.clone());
+        let repository_id = Uuid::new_v4();
+        seed_repository(&pool, repository_id).await;
+        let image_name = DockerImageName::parse("app").unwrap();
+        let old_manifest = sample_manifest(repository_id, &image_name);
+        let mut new_manifest = sample_manifest(repository_id, &image_name);
+        new_manifest.digest = Digest::of(b"a different manifest body");
+        repo.insert_manifest(&old_manifest, &[]).await.unwrap();
+        repo.insert_manifest(&new_manifest, &[]).await.unwrap();
+        repo.set_tag(repository_id, &image_name, "1.0.0", old_manifest.id).await.unwrap();
+        repo.set_tag(repository_id, &image_name, "latest", new_manifest.id).await.unwrap();
+        // Force a deterministic ordering rather than relying on two `now()` calls landing microseconds apart.
+        sqlx::query!(
+            "UPDATE docker_tags SET updated_at = now() - interval '1 hour' WHERE package_repository_id = $1 AND tag = '1.0.0'",
+            repository_id
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let latest = repo.list_latest_manifest_id_per_image(repository_id).await.unwrap();
+
+        assert_eq!(latest, vec![(image_name, new_manifest.id)]);
     }
 }

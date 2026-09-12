@@ -11,11 +11,12 @@ import { RouterLink } from '@angular/router'
 import { Icon } from '@masmarino/gabarit'
 import { RepositoriesService } from '../application/repositories.service'
 import { RepositoryPackages } from '../domain/repository.entity'
+import { VulnerabilitySummaryBadge } from '../vulnerability-summary/vulnerability-summary'
 
 @Component({
   selector: 'app-package-tree',
   standalone: true,
-  imports: [Icon, RouterLink],
+  imports: [Icon, RouterLink, VulnerabilitySummaryBadge],
   templateUrl: './package-tree.html',
   styleUrl: './package-tree.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

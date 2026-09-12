@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT ON (image_name) image_name, manifest_id FROM docker_tags WHERE package_repository_id = $1 ORDER BY image_name, updated_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "image_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "docker_tags",
+            "name": "image_name"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "manifest_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "docker_tags",
+            "name": "manifest_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "1d9c7f1c2c6bf22b132d2e82e0e6046a7c54600f88f958efc4c5305632d73531"
+}

@@ -125,6 +125,7 @@ pub struct NpmPackageVersion {
 /// Lighter than [`NpmPackageVersion`] — no `manifest`, a full package.json a browse/retention sweep never reads.
 #[derive(Debug, Clone)]
 pub struct NpmPackageVersionSummary {
+    pub id: Uuid,
     pub npm_package_id: Uuid,
     pub version: NpmVersion,
     pub tarball_size_bytes: i64,

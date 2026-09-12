@@ -155,6 +155,9 @@ pub struct FakeDockerManifestRepository {
     pub manifest_blobs: Mutex<HashMap<Uuid, Vec<Digest>>>,
     pub manifest_list_members: Mutex<HashMap<Uuid, Vec<Digest>>>,
     pub tags: Mutex<HashMap<(Uuid, String, String), Uuid>>, // (repo_id, image_name, tag) -> manifest_id
+    /// Append-only log of every `set_tag` call, in order — mirrors `docker_tags.updated_at`
+    /// well enough to answer "which tag was most recently (re)pointed" without a real clock.
+    tag_updates: Mutex<Vec<(Uuid, String, String)>>,
 }
 
 impl FakeDockerManifestRepository {
@@ -164,6 +167,7 @@ impl FakeDockerManifestRepository {
             manifest_blobs: Mutex::new(HashMap::new()),
             manifest_list_members: Mutex::new(HashMap::new()),
             tags: Mutex::new(HashMap::new()),
+            tag_updates: Mutex::new(Vec::new()),
         }
     }
 }
@@ -206,6 +210,7 @@ impl DockerManifestRepositoryPort for FakeDockerManifestRepository {
     }
     async fn set_tag(&self, repository_id: Uuid, image_name: &DockerImageName, tag: &str, manifest_id: Uuid) -> Result<(), DomainError> {
         self.tags.lock().unwrap().insert((repository_id, image_name.as_str().to_string(), tag.to_string()), manifest_id);
+        self.tag_updates.lock().unwrap().push((repository_id, image_name.as_str().to_string(), tag.to_string()));
         Ok(())
     }
     async fn delete_manifest(&self, repository_id: Uuid, image_name: &DockerImageName, digest: &Digest) -> Result<(), DomainError> {
@@ -237,6 +242,21 @@ impl DockerManifestRepositoryPort for FakeDockerManifestRepository {
             self.tags.lock().unwrap().keys().filter(|(rid, _, _)| *rid == repository_id).map(|(_, name, tag)| (name.clone(), tag.clone())).collect();
         pairs.sort();
         pairs.into_iter().map(|(name, tag)| DockerImageName::parse(&name).map(|n| (n, tag))).collect()
+    }
+    async fn list_latest_manifest_id_per_image(&self, repository_id: Uuid) -> Result<Vec<(DockerImageName, Uuid)>, DomainError> {
+        let tag_updates = self.tag_updates.lock().unwrap();
+        let tags = self.tags.lock().unwrap();
+        let mut latest: HashMap<String, Uuid> = HashMap::new();
+        // Walked oldest to newest, so the last write per image wins — mirrors `ORDER BY updated_at DESC LIMIT 1`.
+        for (rid, name, tag) in tag_updates.iter() {
+            if *rid != repository_id {
+                continue;
+            }
+            if let Some(manifest_id) = tags.get(&(*rid, name.clone(), tag.clone())) {
+                latest.insert(name.clone(), *manifest_id);
+            }
+        }
+        latest.into_iter().map(|(name, id)| DockerImageName::parse(&name).map(|n| (n, id))).collect()
     }
     async fn list_distinct_digests_for_image(&self, repository_id: Uuid, image_name: &DockerImageName) -> Result<Vec<Digest>, DomainError> {
         let manifest_ids: Vec<Uuid> =
@@ -396,6 +416,13 @@ impl DockerImageScanRepositoryPort for FakeDockerImageScanResults {
     }
     async fn find_latest_for_manifest(&self, docker_manifest_id: Uuid) -> Result<Option<DockerImageScanResult>, DomainError> {
         Ok(self.saved.lock().unwrap().iter().filter(|r| r.docker_manifest_id == docker_manifest_id).max_by_key(|r| r.scanned_at).cloned())
+    }
+    async fn find_latest_for_manifests(&self, docker_manifest_ids: &[Uuid]) -> Result<Vec<DockerImageScanResult>, DomainError> {
+        let saved = self.saved.lock().unwrap();
+        Ok(docker_manifest_ids
+            .iter()
+            .filter_map(|id| saved.iter().filter(|r| r.docker_manifest_id == *id).max_by_key(|r| r.scanned_at).cloned())
+            .collect())
     }
 }
 

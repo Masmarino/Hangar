@@ -15,6 +15,7 @@ import { userProviders } from './users/infrastructure/user.providers'
 import { repositoryProviders } from './repositories/infrastructure/repository.providers'
 import { adminProviders } from './admin/infrastructure/admin.providers'
 import { meProviders } from './shell/infrastructure/me.providers'
+import { versionProviders } from './shell/infrastructure/version.providers'
 import { organizationsProviders } from './admin/infrastructure/organizations.providers'
 import { organizationMembersProviders } from './admin/infrastructure/organization-members.providers'
 import { provideHangarIcons } from './shared/register-icons'
@@ -52,5 +53,6 @@ export const appConfig: ApplicationConfig = {
     ...repositoryProviders,
     ...adminProviders,
     ...meProviders,
+    ...versionProviders,
   ],
 }

@@ -3,7 +3,7 @@ use axum::http::StatusCode;
 use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use chrono::{DateTime, Utc};
-use hangar_application::use_cases::list_repository_packages::RepositoryPackageTree;
+use hangar_application::use_cases::list_repository_packages::{RepositoryPackageTree, VulnerabilitySummary};
 use hangar_domain::docker_registry::DockerImageName;
 use hangar_domain::npm_package::{NpmPackageName, NpmVersion};
 use hangar_domain::package_repository::{PackageRepositorySummary, RepositoryFormat, RepositoryType};
@@ -478,6 +478,7 @@ enum RepositoryPackagesResponse {
 struct NpmPackageTreeResponse {
     name: String,
     versions: Vec<NpmPackageVersionResponse>,
+    vulnerability_summary: VulnerabilitySummaryResponse,
 }
 
 #[derive(Serialize)]
@@ -492,6 +493,21 @@ struct NpmPackageVersionResponse {
 struct DockerImageTreeResponse {
     image_name: String,
     tags: Vec<String>,
+    vulnerability_summary: VulnerabilitySummaryResponse,
+}
+
+#[derive(Serialize)]
+struct VulnerabilitySummaryResponse {
+    critical: i64,
+    high: i64,
+    medium: i64,
+    low: i64,
+}
+
+impl From<VulnerabilitySummary> for VulnerabilitySummaryResponse {
+    fn from(s: VulnerabilitySummary) -> Self {
+        Self { critical: s.critical, high: s.high, medium: s.medium, low: s.low }
+    }
 }
 
 async fn list_repository_packages(
@@ -531,11 +547,15 @@ async fn list_repository_packages(
                             deprecated: v.deprecated,
                         })
                         .collect(),
+                    vulnerability_summary: p.vulnerability_summary.into(),
                 })
                 .collect(),
         },
         RepositoryPackageTree::Docker(images) => RepositoryPackagesResponse::Docker {
-            images: images.into_iter().map(|i| DockerImageTreeResponse { image_name: i.image_name, tags: i.tags }).collect(),
+            images: images
+                .into_iter()
+                .map(|i| DockerImageTreeResponse { image_name: i.image_name, tags: i.tags, vulnerability_summary: i.vulnerability_summary.into() })
+                .collect(),
         },
     }))
 }

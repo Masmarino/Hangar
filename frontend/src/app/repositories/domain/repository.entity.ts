@@ -35,14 +35,23 @@ export interface NpmPackageVersionEntry {
   deprecated: boolean
 }
 
+export interface VulnerabilitySummary {
+  critical: number
+  high: number
+  medium: number
+  low: number
+}
+
 export interface NpmPackageTreeEntry {
   name: string
   versions: NpmPackageVersionEntry[]
+  vulnerability_summary: VulnerabilitySummary
 }
 
 export interface DockerImageTreeEntry {
   image_name: string
   tags: string[]
+  vulnerability_summary: VulnerabilitySummary
 }
 
 export type RepositoryPackages =

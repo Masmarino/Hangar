@@ -61,6 +61,23 @@ impl DockerImageScanRepositoryPort for PostgresDockerImageScanRepository {
         .infra_err()?;
         row.map(ScanRow::into_domain).transpose()
     }
+
+    async fn find_latest_for_manifests(&self, docker_manifest_ids: &[Uuid]) -> Result<Vec<DockerImageScanResult>, DomainError> {
+        if docker_manifest_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let rows = sqlx::query_as!(
+            ScanRow,
+            "SELECT DISTINCT ON (docker_manifest_id) id, docker_manifest_id, scanned_at, vulnerabilities \
+             FROM docker_image_scans WHERE docker_manifest_id = ANY($1) \
+             ORDER BY docker_manifest_id, scanned_at DESC",
+            docker_manifest_ids,
+        )
+        .fetch_all(&self.pool)
+        .await
+        .infra_err()?;
+        rows.into_iter().map(ScanRow::into_domain).collect()
+    }
 }
 
 #[cfg(test)]
@@ -148,5 +165,31 @@ mod tests {
         let found = repo.find_latest_for_manifest(manifest_id).await.unwrap().unwrap();
         assert_eq!(found.id, second.id);
         assert!(found.vulnerabilities.is_empty());
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn find_latest_for_manifests_batches_across_several_manifests_and_skips_unscanned_ones(pool: PgPool) {
+        let repo = PostgresDockerImageScanRepository::new(pool.clone());
+        let scanned = seed_manifest(&pool).await;
+        let never_scanned = seed_manifest(&pool).await;
+        let first = sample_result(scanned);
+        repo.save(&first).await.unwrap();
+        let mut second = sample_result(scanned);
+        second.id = Uuid::new_v4();
+        second.vulnerabilities = vec![];
+        repo.save(&second).await.unwrap();
+
+        let mut found = repo.find_latest_for_manifests(&[scanned, never_scanned]).await.unwrap();
+
+        assert_eq!(found.len(), 1, "the never-scanned manifest must simply be absent, not a zero-value entry");
+        let found = found.remove(0);
+        assert_eq!(found.id, second.id, "must be the most recent scan, not the first one saved");
+        assert!(found.vulnerabilities.is_empty());
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn find_latest_for_manifests_is_empty_for_an_empty_input(pool: PgPool) {
+        let repo = PostgresDockerImageScanRepository::new(pool);
+        assert!(repo.find_latest_for_manifests(&[]).await.unwrap().is_empty());
     }
 }

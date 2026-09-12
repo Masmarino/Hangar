@@ -27,6 +27,12 @@ ingress:
   # Per-organization subdomains (e.g. acme.hangar.skolln.com) need a wildcard cert, which
   # needs a DNS-01 solver — this cluster's ClusterIssuers are all HTTP-01 only. Only `host`
   # itself (the public org) is reachable over HTTPS until DNS-01 is set up.
+  #
+  # Stopgap until then: each organization subdomain that needs to work today gets listed
+  # here manually — HTTP-01 can issue a normal (non-wildcard) SAN for a concrete hostname,
+  # it just can't do it automatically for hosts that don't exist yet.
+  additionalHosts:
+    - alume.hangar.skolln.com
 
 hangar:
   baseDomain: hangar.skolln.com

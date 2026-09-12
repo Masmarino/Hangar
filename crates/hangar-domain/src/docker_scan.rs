@@ -43,4 +43,6 @@ pub struct DockerImageScanResult {
 pub trait DockerImageScanRepositoryPort: Send + Sync {
     async fn save(&self, result: &DockerImageScanResult) -> Result<(), DomainError>;
     async fn find_latest_for_manifest(&self, docker_manifest_id: Uuid) -> Result<Option<DockerImageScanResult>, DomainError>;
+    /// Batched form of `find_latest_for_manifest` across several manifests in one query — a manifest never scanned is simply absent from the result.
+    async fn find_latest_for_manifests(&self, docker_manifest_ids: &[Uuid]) -> Result<Vec<DockerImageScanResult>, DomainError>;
 }

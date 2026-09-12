@@ -45,8 +45,17 @@ the same binary.
 - Docker image vulnerability scanning via [Trivy](https://github.com/aquasecurity/trivy),
   auto-triggered on push, plus manual rescan
 
+**Multi-tenant**
+- Organizations resolved by subdomain (`acme.hangar.example` routes to the
+  `acme` organization), each with its own repositories, users, and branding
+- Organization admins scoped to their own organization only; a super-admin
+  can target any organization via `?organization_id=`
+- Public organization as the default for single-tenant deployments
+
 **Auth & access control**
 - Local accounts with Argon2 password hashing
+- SSO: LDAP/Active Directory and OIDC (OpenID Connect), alongside local
+  accounts — SAML isn't supported yet
 - Mandatory second factor: TOTP or WebAuthn/passkeys, with one-time backup
   codes
 - Personal API tokens (scoped per user; admins can list/revoke any token)
@@ -197,9 +206,10 @@ dishonest to make one up.
 | Docker / OCI | ✅ | ✅ | ✅ | Paid (Pro) only |
 | Other formats (Maven, PyPI, NuGet, Cargo, Helm…) | ❌ *(roadmap)* | ✅ 20+ formats | OCI only (Helm, SBOM, OPA…) | ✅ 60+ formats *(Pro)* |
 | MFA | **Mandatory**, built-in (TOTP/passkey) | Optional, SSO in Pro | Optional | Optional, SSO in Pro |
-| LDAP/SAML/OIDC | ❌ *(roadmap)* | Pro | ❌ | Pro |
+| LDAP/OIDC | ✅ built-in | Pro | ❌ | Pro |
+| SAML | ❌ *(roadmap)* | Pro | ❌ | Pro |
 | Built-in vulnerability scanning | ✅ Trivy, built-in | Separate product (Sonatype Lifecycle) | ✅ Trivy, built-in | Paid (Xray) |
-| Multi-tenant / isolated projects | ❌ *(roadmap)* | ✅ | ✅ | ✅ |
+| Multi-tenant / isolated projects | ✅ subdomain-based organizations | ✅ | ✅ | ✅ |
 | Free self-hosting | ✅ | ✅ (Community Edition) | ✅ (Apache 2.0, CNCF project) | Java only — Docker/npm require the paid tier |
 
 **Estimated annual cost, self-hosted, excluding infrastructure and
@@ -305,8 +315,7 @@ instead of full-throttle), which wasn't done here.
 run against Nexus, Harbor, or Artifactory — the figures above are Hangar
 only. Nexus and Harbor are also mature projects, deployed at scale for
 years, with features Hangar doesn't have yet (see the
-[roadmap](#roadmap)): enterprise identity, high availability,
-multi-tenancy, more package formats.
+[roadmap](#roadmap)): SAML, high availability, more package formats.
 
 ## Roadmap
 
@@ -316,8 +325,8 @@ mandatory MFA are already native. The list below is what we genuinely want
 to build next — in rough priority order.
 
 **Strengthening the foundations**
-- [ ] Enterprise identity: LDAP/Active Directory, SAML, OIDC/SSO — today
-      only local accounts + TOTP/passkeys exist
+- [ ] SAML — LDAP/Active Directory and OIDC are already supported, SAML
+      isn't yet
 - [ ] More package formats: Maven/Gradle, PyPI, NuGet, Cargo, Go modules,
       Helm charts, generic/raw repositories — `hangar-npm`/`hangar-docker`
       already show the adapter pattern to follow
@@ -328,8 +337,9 @@ to build next — in rough priority order.
 - [ ] Package signing / provenance (Sigstore, npm provenance)
 
 **Thinking bigger: an open registry**
-- [ ] Multi-tenant organizations and per-user namespaces, distinct from
-      today's single global admin model
+- [ ] Per-user namespaces within an organization (npm-style `@user/...`
+      scopes), distinct from today's model where repositories belong to
+      the organization
 - [ ] Public, unauthenticated read access for public packages
 - [ ] Rate limiting and abuse prevention for anonymous traffic
 - [ ] Public search and package-discovery pages

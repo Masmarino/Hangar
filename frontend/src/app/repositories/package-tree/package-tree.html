@@ -14,6 +14,7 @@
               <gbt-icon name="package" aria-hidden="true" />
               <span class="package-tree__label">{{ row.pkg.name }}</span>
               <span class="package-tree__count">{{ row.pkg.versions.length }}</span>
+              <app-vulnerability-summary [summary]="row.pkg.vulnerability_summary" />
               <gbt-icon name="chevron-down" class="package-tree__chevron" aria-hidden="true" />
             </a>
           </li>
@@ -31,6 +32,7 @@
               <gbt-icon name="package" aria-hidden="true" />
               <span class="package-tree__label">{{ row.image.image_name }}</span>
               <span class="package-tree__count">{{ row.image.tags.length }}</span>
+              <app-vulnerability-summary [summary]="row.image.vulnerability_summary" />
               <gbt-icon name="chevron-down" class="package-tree__chevron" aria-hidden="true" />
             </a>
           </li>

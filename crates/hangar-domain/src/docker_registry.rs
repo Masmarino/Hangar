@@ -181,6 +181,8 @@ pub trait DockerManifestRepositoryPort: Send + Sync {
     async fn list_image_names_for_repositories(&self, repository_ids: &[Uuid]) -> Result<Vec<(Uuid, DockerImageName)>, DomainError>;
     /// Every (image name, tag) pair in one repository, batching what would otherwise be one `list_tags` call per image.
     async fn list_all_tags_for_repository(&self, repository_id: Uuid) -> Result<Vec<(DockerImageName, String)>, DomainError>;
+    /// The manifest behind each image's most-recently-updated tag, one row per image name — used to resolve "the latest test" per image without an N+1 per-image lookup.
+    async fn list_latest_manifest_id_per_image(&self, repository_id: Uuid) -> Result<Vec<(DockerImageName, Uuid)>, DomainError>;
     /// Distinct digests tagged anywhere on this image, in one query.
     async fn list_distinct_digests_for_image(&self, repository_id: Uuid, image_name: &DockerImageName) -> Result<Vec<Digest>, DomainError>;
     /// Every tag joined to its manifest's digest/media type/created_at, in one query.

@@ -59,6 +59,7 @@ describe('PackageTree', () => {
               deprecated: false,
             },
           ],
+          vulnerability_summary: { critical: 0, high: 0, medium: 0, low: 0 },
         },
       ],
     })
@@ -84,6 +85,7 @@ describe('PackageTree', () => {
               deprecated: false,
             },
           ],
+          vulnerability_summary: { critical: 0, high: 0, medium: 0, low: 0 },
         },
       ],
     })
@@ -108,6 +110,7 @@ describe('PackageTree', () => {
               deprecated: false,
             },
           ],
+          vulnerability_summary: { critical: 0, high: 0, medium: 0, low: 0 },
         },
       ],
     })
@@ -121,12 +124,70 @@ describe('PackageTree', () => {
     const { fixture, httpMock } = render('repo-1')
     httpMock.expectOne('/api/repositories/repo-1/packages').flush({
       format: 'docker',
-      images: [{ image_name: 'my-app', tags: ['latest'] }],
+      images: [
+        {
+          image_name: 'my-app',
+          tags: ['latest'],
+          vulnerability_summary: { critical: 0, high: 0, medium: 0, low: 0 },
+        },
+      ],
     })
     fixture.detectChanges()
 
     const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.package-tree__node')
     expect(link.getAttribute('href')).toBe('/repositories/repo-1/packages/docker/my-app')
+  })
+
+  it('shows one vulnerability circle per severity on a docker row, counts included', () => {
+    const { fixture, httpMock } = render('repo-1')
+    httpMock.expectOne('/api/repositories/repo-1/packages').flush({
+      format: 'docker',
+      images: [
+        {
+          image_name: 'my-app',
+          tags: ['latest'],
+          vulnerability_summary: { critical: 1, high: 2, medium: 0, low: 0 },
+        },
+      ],
+    })
+    fixture.detectChanges()
+
+    const circles: NodeListOf<HTMLSpanElement> =
+      fixture.nativeElement.querySelectorAll('.vuln-summary__circle')
+    expect(circles.length).toBe(4)
+    expect(circles[0].textContent?.trim()).toBe('1')
+    expect(circles[0].classList).toContain('vuln-summary__circle--critical')
+    expect(circles[1].textContent?.trim()).toBe('2')
+    expect(circles[1].classList).toContain('vuln-summary__circle--high')
+    expect(circles[2].textContent?.trim()).toBe('0')
+    expect(circles[3].textContent?.trim()).toBe('0')
+  })
+
+  it('still shows all four vulnerability circles, at zero, when a package has a clean summary', () => {
+    const { fixture, httpMock } = render('repo-1')
+    httpMock.expectOne('/api/repositories/repo-1/packages').flush({
+      format: 'npm',
+      packages: [
+        {
+          name: 'left-pad',
+          versions: [
+            {
+              version: '1.0.0',
+              published_at: '2026-01-01T00:00:00Z',
+              size_bytes: 10,
+              deprecated: false,
+            },
+          ],
+          vulnerability_summary: { critical: 0, high: 0, medium: 0, low: 0 },
+        },
+      ],
+    })
+    fixture.detectChanges()
+
+    const circles: NodeListOf<HTMLSpanElement> =
+      fixture.nativeElement.querySelectorAll('.vuln-summary__circle')
+    expect(circles.length).toBe(4)
+    expect(Array.from(circles).every((c) => c.textContent?.trim() === '0')).toBe(true)
   })
 
   it('re-fetches when the repository id input changes', () => {

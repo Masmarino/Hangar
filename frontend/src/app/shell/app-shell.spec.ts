@@ -8,6 +8,7 @@ import { provideTransloco } from '@jsverse/transloco'
 import { AppShell } from './app-shell'
 import { AuthService } from '../auth/application/auth.service'
 import { meProviders } from './infrastructure/me.providers'
+import { versionProviders } from './infrastructure/version.providers'
 import { authProviders } from '../auth/infrastructure/auth.providers'
 import { userProviders } from '../users/infrastructure/user.providers'
 import { repositoryProviders } from '../repositories/infrastructure/repository.providers'
@@ -28,6 +29,7 @@ describe('AppShell', () => {
         ...userProviders,
         ...repositoryProviders,
         ...meProviders,
+        ...versionProviders,
         provideRouter([]),
         provideTransloco({
           config: { availableLangs: ['fr'], defaultLang: 'fr', prodMode: false },
@@ -48,6 +50,7 @@ describe('AppShell', () => {
     is_organization_admin?: boolean
     organization_id?: string
   }) {
+    httpMock.expectOne('/api/version').flush({ version: '0.2.3' })
     httpMock
       .expectOne('/api/me')
       .flush({ is_organization_admin: false, organization_id: 'org-1', ...me })
@@ -57,6 +60,45 @@ describe('AppShell', () => {
       httpMock.expectOne('/api/users').flush([])
     }
   }
+
+  it('renders a skip-link (from gbt-app-shell) targeting the actual main content element', () => {
+    const fixture = TestBed.createComponent(AppShell)
+    fixture.detectChanges()
+    flushMe({ id: 'user-1', username: 'florian', is_super_admin: false })
+    fixture.detectChanges()
+
+    const skipLink: HTMLAnchorElement = fixture.nativeElement.querySelector('.gbt-app-shell__skip')
+    expect(skipLink.textContent?.trim()).toBe('Aller au contenu principal')
+
+    const targetId = skipLink.getAttribute('href')!.replace('#', '')
+    const main = fixture.nativeElement.querySelector(`#${targetId}`)
+    expect(main).toBeTruthy()
+    expect(main.classList.contains('gbt-app-shell__content')).toBe(true)
+  })
+
+  it('renders the mobile nav toggle (from gbt-app-shell), hidden by default via CSS but present in the DOM', () => {
+    const fixture = TestBed.createComponent(AppShell)
+    fixture.detectChanges()
+    flushMe({ id: 'user-1', username: 'florian', is_super_admin: false })
+    fixture.detectChanges()
+
+    const toggle: HTMLButtonElement = fixture.nativeElement.querySelector('.gbt-app-shell__toggle')
+    expect(toggle).toBeTruthy()
+    expect(toggle.getAttribute('aria-label')).toBe('Ouvrir le menu de navigation')
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('shows the server version in the sidebar once /api/version resolves', () => {
+    const fixture = TestBed.createComponent(AppShell)
+    fixture.detectChanges()
+
+    expect(fixture.nativeElement.textContent).not.toContain('v0.2.3')
+
+    flushMe({ id: 'user-1', username: 'florian', is_super_admin: false })
+    fixture.detectChanges()
+
+    expect(fixture.nativeElement.textContent).toContain('v0.2.3')
+  })
 
   it('excludes admin-only items from navItems before /api/me resolves', () => {
     const fixture = TestBed.createComponent(AppShell)
@@ -174,6 +216,7 @@ describe('AppShell', () => {
           ...userProviders,
           ...repositoryProviders,
           ...meProviders,
+          ...versionProviders,
           provideRouter([
             { path: 'admin', component: DummyRoutedComponent },
             { path: 'admin/export', component: DummyRoutedComponent },
@@ -279,6 +322,7 @@ describe('AppShell', () => {
           ...userProviders,
           ...repositoryProviders,
           ...meProviders,
+          ...versionProviders,
           provideRouter([
             { path: 'repositories', component: DummyRoutedComponent, data: { title: 'Dépôts' } },
             { path: 'admin', component: DummyRoutedComponent, data: { title: 'Administration' } },
@@ -396,6 +440,7 @@ describe('AppShell', () => {
         ...userProviders,
         ...repositoryProviders,
         ...meProviders,
+        ...versionProviders,
         provideRouter([{ path: 'account', component: DummyRoutedComponent }]),
         provideTransloco({
           config: { availableLangs: ['fr'], defaultLang: 'fr', prodMode: false },
@@ -426,6 +471,7 @@ describe('AppShell', () => {
     it('filters repositories (and users, for super-admins) by the typed query', () => {
       const fixture = TestBed.createComponent(AppShell)
       fixture.detectChanges()
+      httpMock.expectOne('/api/version').flush({ version: '0.2.3' })
       httpMock
         .expectOne('/api/me')
         .flush({ id: 'user-1', username: 'florian', is_super_admin: true })
@@ -481,6 +527,7 @@ describe('AppShell', () => {
     it('navigates to the selected result and clears the query', () => {
       const fixture = TestBed.createComponent(AppShell)
       fixture.detectChanges()
+      httpMock.expectOne('/api/version').flush({ version: '0.2.3' })
       httpMock
         .expectOne('/api/me')
         .flush({ id: 'user-1', username: 'florian', is_super_admin: false })
@@ -518,6 +565,7 @@ describe('AppShell', () => {
     it('re-fetches repositories when a search starts, so a repo created elsewhere in the session is found', () => {
       const fixture = TestBed.createComponent(AppShell)
       fixture.detectChanges()
+      httpMock.expectOne('/api/version').flush({ version: '0.2.3' })
       httpMock
         .expectOne('/api/me')
         .flush({ id: 'user-1', username: 'florian', is_super_admin: false })
@@ -545,6 +593,7 @@ describe('AppShell', () => {
     it('does not re-fetch on every keystroke of the same search', () => {
       const fixture = TestBed.createComponent(AppShell)
       fixture.detectChanges()
+      httpMock.expectOne('/api/version').flush({ version: '0.2.3' })
       httpMock
         .expectOne('/api/me')
         .flush({ id: 'user-1', username: 'florian', is_super_admin: false })
@@ -561,6 +610,7 @@ describe('AppShell', () => {
     it('re-fetches again on a new search after the previous one was cleared', () => {
       const fixture = TestBed.createComponent(AppShell)
       fixture.detectChanges()
+      httpMock.expectOne('/api/version').flush({ version: '0.2.3' })
       httpMock
         .expectOne('/api/me')
         .flush({ id: 'user-1', username: 'florian', is_super_admin: false })

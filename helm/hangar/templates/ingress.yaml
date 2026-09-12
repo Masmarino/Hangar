@@ -24,8 +24,23 @@ spec:
                 name: {{ .Release.Name }}
                 port:
                   name: http
+    {{- range .Values.ingress.additionalHosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $.Release.Name }}
+                port:
+                  name: http
+    {{- end }}
   tls:
     - hosts:
         - {{ .Values.ingress.host }}
+        {{- range .Values.ingress.additionalHosts }}
+        - {{ . }}
+        {{- end }}
       secretName: {{ .Release.Name }}-tls
 {{- end }}

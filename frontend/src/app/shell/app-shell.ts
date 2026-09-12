@@ -20,9 +20,16 @@ import {
   RouterOutlet,
 } from '@angular/router'
 import { filter, map } from 'rxjs'
-import { Icon, SearchBar, SearchResultCategory, Toaster } from '@masmarino/gabarit'
+import {
+  AppShell as GbtAppShell,
+  Icon,
+  SearchBar,
+  SearchResultCategory,
+  Toaster,
+} from '@masmarino/gabarit'
 import { AuthService } from '../auth/application/auth.service'
 import { MeService } from './application/me.service'
+import { VersionService } from './application/version.service'
 import { PageTitleService } from './page-title.service'
 import { RepositoriesService } from '../repositories/application/repositories.service'
 import { RepositorySummary } from '../repositories/domain/repository.entity'
@@ -53,7 +60,7 @@ const STAFF_ONLY_ACTIONS = new Set(['users'])
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, SearchBar, Toaster],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, SearchBar, Toaster, GbtAppShell],
   templateUrl: './app-shell.html',
   styleUrl: './app-shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -65,6 +72,7 @@ export class AppShell implements OnInit {
   private readonly repositoriesService = inject(RepositoriesService)
   private readonly usersService = inject(UsersService)
   readonly me = inject(MeService)
+  readonly version = inject(VersionService)
   readonly pageTitle = inject(PageTitleService)
   readonly toastService = inject(ToastService)
 
@@ -170,6 +178,7 @@ export class AppShell implements OnInit {
   }
 
   ngOnInit(): void {
+    this.version.load()
     this.me.load().subscribe({
       next: () => {
         this.isLoading.set(false)

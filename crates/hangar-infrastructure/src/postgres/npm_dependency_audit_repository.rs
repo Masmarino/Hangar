@@ -73,6 +73,23 @@ impl DependencyAuditRepositoryPort for PostgresDependencyAuditRepository {
         .infra_err()?;
         row.map(AuditRow::into_domain).transpose()
     }
+
+    async fn find_latest_for_versions(&self, npm_package_version_ids: &[Uuid]) -> Result<Vec<DependencyAuditResult>, DomainError> {
+        if npm_package_version_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let rows = sqlx::query_as!(
+            AuditRow,
+            "SELECT DISTINCT ON (npm_package_version_id) id, npm_package_version_id, scanned_at, packages_scanned, truncated, findings \
+             FROM npm_dependency_audits WHERE npm_package_version_id = ANY($1) \
+             ORDER BY npm_package_version_id, scanned_at DESC",
+            npm_package_version_ids,
+        )
+        .fetch_all(&self.pool)
+        .await
+        .infra_err()?;
+        rows.into_iter().map(AuditRow::into_domain).collect()
+    }
 }
 
 #[cfg(test)]
@@ -180,5 +197,31 @@ mod tests {
         assert_eq!(found.id, second.id);
         assert_eq!(found.packages_scanned, 20);
         assert!(found.findings.is_empty());
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn find_latest_for_versions_batches_across_several_versions_and_skips_unaudited_ones(pool: PgPool) {
+        let repo = PostgresDependencyAuditRepository::new(pool.clone());
+        let audited = seed_version(&pool).await;
+        let never_audited = seed_version(&pool).await;
+        let first = sample_result(audited);
+        repo.save(&first).await.unwrap();
+        let mut second = sample_result(audited);
+        second.id = Uuid::new_v4();
+        second.findings = vec![];
+        repo.save(&second).await.unwrap();
+
+        let mut found = repo.find_latest_for_versions(&[audited, never_audited]).await.unwrap();
+
+        assert_eq!(found.len(), 1, "the never-audited version must simply be absent, not a zero-value entry");
+        let found = found.remove(0);
+        assert_eq!(found.id, second.id, "must be the most recent audit, not the first one saved");
+        assert!(found.findings.is_empty());
+    }
+
+    #[sqlx::test(migrations = "../hangar-infrastructure/migrations")]
+    async fn find_latest_for_versions_is_empty_for_an_empty_input(pool: PgPool) {
+        let repo = PostgresDependencyAuditRepository::new(pool);
+        assert!(repo.find_latest_for_versions(&[]).await.unwrap().is_empty());
     }
 }

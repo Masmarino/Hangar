@@ -47,8 +47,19 @@ frontend Angular 22 servi par le même binaire.
   [Trivy](https://github.com/aquasecurity/trivy), déclenché automatiquement
   à chaque push, plus relance manuelle
 
+**Multi-tenant**
+- Organisations résolues par sous-domaine (`acme.hangar.example` route vers
+  l'organisation `acme`), chacune avec ses propres dépôts, utilisateurs et
+  marque
+- Admins d'organisation aux droits scopés à leur seule organisation ; un
+  super-admin peut cibler n'importe quelle organisation via
+  `?organization_id=`
+- Organisation publique par défaut pour les déploiements mono-tenant
+
 **Authentification & contrôle d'accès**
 - Comptes locaux avec hachage de mot de passe Argon2
+- SSO : LDAP/Active Directory et OIDC (OpenID Connect), en plus des comptes
+  locaux — SAML n'est pas encore supporté
 - Double authentification obligatoire : TOTP ou clé d'accès (WebAuthn/
   passkey), avec codes de secours à usage unique
 - Tokens API personnels (portée par utilisateur ; les admins peuvent lister
@@ -208,9 +219,10 @@ outils, et il serait malhonnête d'en inventer.
 | Docker / OCI | ✅ | ✅ | ✅ | Payant (Pro) uniquement |
 | Autres formats (Maven, PyPI, NuGet, Cargo, Helm…) | ❌ *(feuille de route)* | ✅ 20+ formats | OCI uniquement (Helm, SBOM, OPA…) | ✅ 60+ formats *(Pro)* |
 | MFA | **Obligatoire**, natif (TOTP/passkey) | Optionnel, SSO en Pro | Optionnel | Optionnel, SSO en Pro |
-| LDAP/SAML/OIDC | ❌ *(feuille de route)* | Pro | ❌ | Pro |
+| LDAP/OIDC | ✅ natif | Pro | ❌ | Pro |
+| SAML | ❌ *(feuille de route)* | Pro | ❌ | Pro |
 | Scan de vulnérabilités intégré | ✅ Trivy, natif | Produit séparé (Sonatype Lifecycle) | ✅ Trivy, natif | Payant (Xray) |
-| Multi-tenant / projets isolés | ❌ *(feuille de route)* | ✅ | ✅ | ✅ |
+| Multi-tenant / projets isolés | ✅ organisations par sous-domaine | ✅ | ✅ | ✅ |
 | Auto-hébergement gratuit | ✅ | ✅ (Community Edition) | ✅ (Apache 2.0, projet CNCF) | Java uniquement — Docker/npm exigent la version payante |
 
 **Coût annuel estimé, auto-hébergé, hors infrastructure et exploitation**
@@ -321,8 +333,8 @@ n'a été faite face à Nexus, Harbor ou Artifactory — les chiffres ci-dessus
 ne concernent que Hangar. Nexus et Harbor sont par ailleurs des projets
 matures, déployés à grande échelle depuis des années, avec des
 fonctionnalités que Hangar n'a pas encore (voir la
-[feuille de route](#feuille-de-route)) : identité d'entreprise, haute
-disponibilité, multi-tenant, davantage de formats de paquets.
+[feuille de route](#feuille-de-route)) : SAML, haute disponibilité,
+davantage de formats de paquets.
 
 ## Feuille de route
 
@@ -333,8 +345,8 @@ qu'on a vraiment envie de mener ensuite — par ordre de priorité
 approximatif.
 
 **Solidifier les fondations**
-- [ ] Identité d'entreprise : LDAP/Active Directory, SAML, OIDC/SSO —
-      aujourd'hui seuls les comptes locaux + TOTP/passkeys existent
+- [ ] SAML — LDAP/Active Directory et OIDC sont déjà supportés, SAML pas
+      encore
 - [ ] Davantage de formats de paquets : Maven/Gradle, PyPI, NuGet, Cargo,
       Go modules, Helm charts, dépôts génériques/raw — `hangar-npm`/
       `hangar-docker` montrent déjà le patron d'adaptateur à suivre
@@ -345,8 +357,9 @@ approximatif.
 - [ ] Signature/provenance des paquets (Sigstore, npm provenance)
 
 **Voir plus grand : un registre ouvert**
-- [ ] Organisations multi-tenant et espaces de noms par utilisateur,
-      distincts du modèle actuel d'admin global unique
+- [ ] Espaces de noms par utilisateur au sein d'une organisation (scopes
+      façon npm `@user/...`), distincts du modèle actuel où les dépôts
+      appartiennent à l'organisation
 - [ ] Accès en lecture public, non authentifié, pour les paquets publics
 - [ ] Limitation de débit et prévention des abus pour le trafic anonyme
 - [ ] Pages de recherche et de découverte de paquets publiques

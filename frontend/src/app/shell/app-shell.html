@@ -1,10 +1,14 @@
 @if (isLoading()) {
   <div class="app-shell__loading">Chargement…</div>
 } @else {
-  <div class="app-shell">
-    <a href="#main-content" class="skip-link">Aller au contenu principal</a>
-    <nav class="app-shell__nav" aria-label="Navigation principale">
-      <img src="/api/branding/logo" alt="Hangar logo" class="app-shell__logo" />
+  <gbt-app-shell
+    navLabel="Navigation principale"
+    skipLabel="Aller au contenu principal"
+    openMenuLabel="Ouvrir le menu de navigation"
+    closeMenuLabel="Fermer le menu de navigation"
+  >
+    <img src="/api/branding/logo" alt="Hangar logo" class="app-shell__logo" shell-brand />
+    <ng-container shell-nav>
       <ul class="app-shell__nav-list">
         @for (item of navItems(); track item.action) {
           @if (item.children) {
@@ -64,66 +68,65 @@
           }
         }
       </ul>
-    </nav>
-    <div class="app-shell__main">
-      <header class="app-shell__header">
-        <h1 class="app-shell__page-title">{{ pageTitle.title() }}</h1>
-        <gbt-search-bar
-          class="app-shell__search"
-          placeholder="Rechercher un dépôt ou un utilisateur..."
-          noResultsMessage="Aucun résultat"
-          noResultsHint="Essayez une autre recherche."
-          clearLabel="Effacer la recherche"
-          navigateHint="Naviguer"
-          selectHint="Sélectionner"
-          closeHint="Fermer"
-          [groupedResults]="searchResults()"
-          [displayFn]="searchResultLabel"
-          [resultsAnnouncement]="resultsAnnouncement"
-          (queryChange)="onSearchInput($event)"
-          (clear)="onSearchInput('')"
-          (itemSelected)="onSelectResult($event)"
-        />
-        <div class="app-shell__user-menu" #userMenu>
-          <button
-            type="button"
-            class="app-shell__user-trigger"
-            [attr.aria-expanded]="userMenuOpen()"
-            aria-haspopup="menu"
-            (click)="toggleUserMenu()"
-          >
-            <span>{{ me.username() }}</span>
-            <gbt-icon name="chevron-down" aria-hidden="true" />
-          </button>
-          @if (userMenuOpen()) {
-            <div class="app-shell__user-dropdown" role="menu">
-              <a
-                routerLink="/account"
-                class="app-shell__user-dropdown-item"
-                role="menuitem"
-                (click)="userMenuOpen.set(false)"
-              >
-                <gbt-icon name="user" aria-hidden="true" />
-                <span>Mon compte</span>
-              </a>
-              <button
-                type="button"
-                class="app-shell__user-dropdown-item"
-                role="menuitem"
-                (click)="logout()"
-              >
-                <gbt-icon name="log-out" aria-hidden="true" />
-                <span>Déconnexion</span>
-              </button>
-            </div>
-          }
-        </div>
-      </header>
-      <main id="main-content" class="app-shell__content" tabindex="-1">
-        <router-outlet />
-      </main>
+      @if (version.version(); as versionText) {
+        <div class="app-shell__version">v{{ versionText }}</div>
+      }
+    </ng-container>
+    <div class="app-shell__header" shell-header>
+      <h1 class="app-shell__page-title">{{ pageTitle.title() }}</h1>
+      <gbt-search-bar
+        class="app-shell__search"
+        placeholder="Rechercher un dépôt ou un utilisateur..."
+        noResultsMessage="Aucun résultat"
+        noResultsHint="Essayez une autre recherche."
+        clearLabel="Effacer la recherche"
+        navigateHint="Naviguer"
+        selectHint="Sélectionner"
+        closeHint="Fermer"
+        [groupedResults]="searchResults()"
+        [displayFn]="searchResultLabel"
+        [resultsAnnouncement]="resultsAnnouncement"
+        (queryChange)="onSearchInput($event)"
+        (clear)="onSearchInput('')"
+        (itemSelected)="onSelectResult($event)"
+      />
+      <div class="app-shell__user-menu" #userMenu>
+        <button
+          type="button"
+          class="app-shell__user-trigger"
+          [attr.aria-expanded]="userMenuOpen()"
+          aria-haspopup="menu"
+          (click)="toggleUserMenu()"
+        >
+          <span>{{ me.username() }}</span>
+          <gbt-icon name="chevron-down" aria-hidden="true" />
+        </button>
+        @if (userMenuOpen()) {
+          <div class="app-shell__user-dropdown" role="menu">
+            <a
+              routerLink="/account"
+              class="app-shell__user-dropdown-item"
+              role="menuitem"
+              (click)="userMenuOpen.set(false)"
+            >
+              <gbt-icon name="user" aria-hidden="true" />
+              <span>Mon compte</span>
+            </a>
+            <button
+              type="button"
+              class="app-shell__user-dropdown-item"
+              role="menuitem"
+              (click)="logout()"
+            >
+              <gbt-icon name="log-out" aria-hidden="true" />
+              <span>Déconnexion</span>
+            </button>
+          </div>
+        }
+      </div>
     </div>
-  </div>
+    <router-outlet />
+  </gbt-app-shell>
 }
 
 <gbt-toaster

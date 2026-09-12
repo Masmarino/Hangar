@@ -61,6 +61,7 @@ impl NpmPackageRepositoryPort for FakePackages {
             .values()
             .filter(|v| npm_package_ids.contains(&v.npm_package_id))
             .map(|v| hangar_domain::npm_package::NpmPackageVersionSummary {
+                id: v.id,
                 npm_package_id: v.npm_package_id,
                 version: v.version.clone(),
                 tarball_size_bytes: v.tarball_size_bytes,
@@ -228,6 +229,17 @@ impl hangar_domain::npm_audit::DependencyAuditRepositoryPort for FakeDependencyA
             .filter(|r| r.npm_package_version_id == npm_package_version_id)
             .max_by_key(|r| r.scanned_at)
             .cloned())
+    }
+
+    async fn find_latest_for_versions(
+        &self,
+        npm_package_version_ids: &[Uuid],
+    ) -> Result<Vec<hangar_domain::npm_audit::DependencyAuditResult>, DomainError> {
+        let saved = self.saved.lock().unwrap();
+        Ok(npm_package_version_ids
+            .iter()
+            .filter_map(|id| saved.iter().filter(|r| r.npm_package_version_id == *id).max_by_key(|r| r.scanned_at).cloned())
+            .collect())
     }
 }
 

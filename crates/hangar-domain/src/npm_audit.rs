@@ -82,6 +82,8 @@ pub trait DependencyAuditRepositoryPort: Send + Sync {
 
     /// `None` means never scanned, distinct from "scanned, no findings".
     async fn find_latest_for_version(&self, npm_package_version_id: Uuid) -> Result<Option<DependencyAuditResult>, DomainError>;
+    /// Batched form of `find_latest_for_version` across several versions in one query — a version never scanned is simply absent from the result.
+    async fn find_latest_for_versions(&self, npm_package_version_ids: &[Uuid]) -> Result<Vec<DependencyAuditResult>, DomainError>;
 }
 
 #[cfg(test)]

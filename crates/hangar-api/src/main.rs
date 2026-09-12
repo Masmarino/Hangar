@@ -133,6 +133,7 @@ pub fn build_router_with_cors(state: AppState, cors_allowed_origin: Option<Strin
     // Scoped to this JSON surface only — /npm and /v2 already serve compressed binary content.
     let json_api_routes = Router::new()
         .route("/healthz", get(|| async { "ok" }))
+        .route("/api/version", get(|| async { axum::Json(serde_json::json!({ "version": env!("CARGO_PKG_VERSION") })) }))
         .merge(routes::admin::router())
         .merge(routes::branding::router())
         .merge(routes::auth::router())
@@ -454,6 +455,19 @@ mod tests {
         let csp = headers.get("content-security-policy").unwrap().to_str().unwrap();
         assert!(csp.contains("default-src 'self'"));
         assert!(csp.contains("frame-ancestors 'none'"));
+    }
+
+    #[sqlx::test]
+    async fn version_endpoint_reports_the_crate_version(pool: sqlx::PgPool) {
+        let state = AppState::build(pool, &test_config());
+        let app = build_router(state);
+
+        let response = app.oneshot(Request::builder().uri("/api/version").body(Body::empty()).unwrap()).await.unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["version"], env!("CARGO_PKG_VERSION"));
     }
 
     #[sqlx::test]

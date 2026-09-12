@@ -1,21 +1,8 @@
 .app-shell {
-  display: flex;
-  min-height: 100vh;
-
   &__logo {
     height: 40px;
     width: fit-content;
     margin-bottom: 1rem;
-  }
-
-  &__nav {
-    width: 220px;
-    flex-shrink: 0;
-    background: var(--bg-panel);
-    border-right: 1px solid var(--border-color);
-    padding: 1rem 0.75rem;
-    display: flex;
-    flex-direction: column;
   }
 
   &__nav-list {
@@ -104,22 +91,22 @@
     gap: 0.25rem;
   }
 
-  &__main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    height: 100dvh;
-    background: var(--bg-panel);
+  &__version {
+    margin-top: auto;
+    padding: 0.5rem 0.75rem 0;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
   }
 
+  // Nested inside Gabarit's own <header> (flex, next to the mobile burger toggle) —
+  // needs to grow into the remaining width for the grid below to make sense.
   &__header {
+    flex: 1;
+    min-width: 0;
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 1rem;
-    padding: 0.75rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
   }
 
   &__page-title {
@@ -132,12 +119,6 @@
 
   &__search {
     justify-self: center;
-  }
-
-  &__content {
-    flex: 1;
-    padding: 1.5rem;
-    overflow-y: auto;
   }
 
   &__user-menu {

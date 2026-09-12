@@ -67,6 +67,7 @@ impl SearchRow {
 
 /// Backs `list_versions_for_packages` — same idea as `SearchRow`, no `manifest`.
 struct VersionSummaryRow {
+    id: Uuid,
     npm_package_id: Uuid,
     version: String,
     tarball_size_bytes: i64,
@@ -77,6 +78,7 @@ struct VersionSummaryRow {
 impl VersionSummaryRow {
     fn into_domain(self) -> Result<hangar_domain::npm_package::NpmPackageVersionSummary, DomainError> {
         Ok(hangar_domain::npm_package::NpmPackageVersionSummary {
+            id: self.id,
             npm_package_id: self.npm_package_id,
             version: NpmVersion::parse(&self.version)?,
             tarball_size_bytes: self.tarball_size_bytes,
@@ -200,7 +202,7 @@ impl NpmPackageRepositoryPort for PostgresNpmPackageRepository {
         }
         let rows = sqlx::query_as!(
             VersionSummaryRow,
-            "SELECT npm_package_id, version, tarball_size_bytes, deprecated, published_at \
+            "SELECT id, npm_package_id, version, tarball_size_bytes, deprecated, published_at \
              FROM npm_package_versions WHERE npm_package_id = ANY($1) ORDER BY npm_package_id, published_at",
             npm_package_ids
         )

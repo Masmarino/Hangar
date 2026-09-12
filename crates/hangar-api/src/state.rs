@@ -328,7 +328,12 @@ impl AppState {
             revoke_api_token: Arc::new(RevokeApiTokenUseCase::new(api_tokens.clone())),
             admin_list_api_tokens: Arc::new(AdminListApiTokensUseCase::new(api_tokens.clone(), users_repo.clone())),
             admin_revoke_api_token: Arc::new(AdminRevokeApiTokenUseCase::new(api_tokens.clone())),
-            list_repository_packages: Arc::new(ListRepositoryPackagesUseCase::new(npm_packages.clone(), docker_manifests.clone())),
+            list_repository_packages: Arc::new(ListRepositoryPackagesUseCase::new(
+                npm_packages.clone(),
+                dependency_audits.clone(),
+                docker_manifests.clone(),
+                docker_image_scans.clone(),
+            )),
             get_npm_package_details: Arc::new(GetNpmPackageDetailsUseCase::new(npm_packages.clone())),
             get_docker_image_details: Arc::new(GetDockerImageDetailsUseCase::new(docker_manifests.clone())),
             unpublish_npm_package: unpublish_npm_package.clone(),
